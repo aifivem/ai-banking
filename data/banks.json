@@ -1,0 +1,72 @@
+{
+  "legion_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": 149.9,
+      "y": -1040.7,
+      "z": 29.37
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "pillbox_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": 314.2,
+      "y": -279.0,
+      "z": 54.17
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "burton_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": -350.8,
+      "y": -49.6,
+      "z": 49.04
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "rockford_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": -1212.98,
+      "y": -330.84,
+      "z": 37.79
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "great_ocean_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": -2962.6,
+      "y": 482.6,
+      "z": 15.7
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "pacific": {
+    "label": "Pacific Standard",
+    "coords": {
+      "x": 246.6,
+      "y": 223.6,
+      "z": 106.29
+    },
+    "radius": 3,
+    "blip": true
+  },
+  "paleto": {
+    "label": "Blaine County Savings",
+    "coords": {
+      "x": -112.2,
+      "y": 6469.3,
+      "z": 31.63
+    },
+    "radius": 3,
+    "blip": true
+  }
+}
