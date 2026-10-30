@@ -69,14 +69,14 @@ function inReach(source: number, session: Session): boolean {
 
 /** Society accounts the player runs: the bank account of every job where the player's grade is a boss grade. */
 function bossJobs(source: number): string[] {
-  const defs = core.GetJobDefinitions();
   return (core.GetJobs(source) ?? [])
-    .filter((m) => defs[m.job]?.grades[m.grade]?.boss === true)
+    .filter(
+      (m) => core.GetJobDefinition(m.job)?.grades[m.grade]?.boss === true,
+    )
     .map((m) => m.job);
 }
 
 function accounts(source: number): AccountView[] {
-  const defs = core.GetJobDefinitions();
   const list: AccountView[] = [
     {
       key: "personal",
@@ -87,7 +87,7 @@ function accounts(source: number): AccountView[] {
   for (const job of bossJobs(source))
     list.push({
       key: `job:${job}`,
-      label: defs[job]?.label ?? job,
+      label: core.GetJobDefinition(job)?.label ?? job,
       balance: core.GetSharedMoney("job", job, "bank") ?? 0,
     });
   return list;
