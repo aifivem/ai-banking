@@ -1,6 +1,6 @@
 # ai-banking
 
-Banks (branches from the panel) and ATMs (world props through ai-target): personal account, society accounts for job bosses, deposit, withdraw, transfer to online players, transaction history. Society money for QB scripts (`qb-banking`, `Renewed-Banking` names). Depends on ai-core (accounts, ledger, jobs); ai-target optional for ATMs. Research and decisions: `docs/research/ai-banking.md`.
+Banks (branches from the panel) and ATMs (world props through ai-target): personal account, society accounts for job bosses, deposit, withdraw, transfer to online players, transaction history. Society money for QB scripts (`qb-banking`, `Renewed-Banking` names). Depends on ai-core (accounts, ledger, jobs); ai-target optional for ATMs.
 
 ## Decisions
 
