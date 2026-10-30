@@ -1,6 +1,6 @@
 # ai-banking
 
-Banks (branches from the panel) and ATMs (world props through ai-target): personal account, society accounts for job bosses, deposit, withdraw, transfer to online players, transaction history. Society money for QB scripts (`qb-banking`, `Renewed-Banking` names). Depends on ai-core (accounts, ledger, jobs); ai-target optional for ATMs.
+Banks (branches from the panel) and ATMs (world props, a lib `Points` model point: prompt or target): personal account, society accounts for job bosses, deposit, withdraw, transfer to online players, transaction history. Society money for QB scripts (`qb-banking`, `Renewed-Banking` names). Depends on ai-core (accounts, ledger, jobs).
 
 ## Decisions
 
@@ -17,5 +17,5 @@ Banks (branches from the panel) and ATMs (world props through ai-target): person
 ## Entry points
 
 - Server: open, history, actions, exports `resource/server/index.ts`; ledger reads `server/history.ts`.
-- Client: branches, ATM option, NUI bridge `resource/client/index.ts`.
+- Client: branch and ATM points, NUI bridge `resource/client/index.ts`.
 - NUI (tgiann-bank look): shell and labelled header tabs `web/src/App.tsx`, card / accounts / activity (in and out of the loaded history page) / form / history in `web/src/features/`; preview `bun run webdev` (`?atm=1`).

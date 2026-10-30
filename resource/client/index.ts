@@ -4,7 +4,6 @@ import {
   notify,
   onPlayerData,
   onServerEvent,
-  optionalExport,
   Points,
   triggerServerCallback,
 } from "@aicore-fivem/lib/client";
@@ -74,7 +73,7 @@ class Screen {
 
 const screen = new Screen();
 
-/** Branch points (prompt or target, with blips); ATMs through ai-target's model options when it runs. */
+/** Branch points (with blips) and the ATM models, as prompts or targets. */
 const points = new Points();
 function rebuild(): void {
   points.clear();
@@ -90,22 +89,20 @@ function rebuild(): void {
       onPressed: () => screen.show("bank"),
     });
   }
-  const target = optionalExport("ai-target");
   const models = readSettings(world.get("settings")).atmModels;
-  if (target && models.length)
-    target.addModel(models, [
-      {
-        name: "ai-banking:atm",
-        label: Locale("ATM_USE"),
-        icon: "fa-solid fa-credit-card",
-        distance: 1.5,
-        onSelect: () => void screen.show("atm"),
-      },
-    ]);
+  if (models.length)
+    points.addModel("atm", {
+      models,
+      label: Locale("ATM_USE"),
+      icon: "credit-card",
+      radius: 1.5,
+      onPressed: () => screen.show("atm"),
+    });
 }
 
 rebuild();
 world.onChange("banks", rebuild);
+world.onChange("settings", rebuild);
 
 onPlayerData("money", (money) => {
   if (screen.open && typeof money.cash === "number")
