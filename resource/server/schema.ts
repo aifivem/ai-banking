@@ -37,7 +37,7 @@ export const bankingSchema: PanelSchema = {
           title: "ADMIN_C_BANK",
           desc: "ADMIN_C_BANK_DESC",
           fields: [
-            { widget: "text", path: "label", label: "ADMIN_F_LABEL", placeholder: "ADMIN_P_LABEL" },
+            { widget: "text", path: "label", suggest: { from: "coords" }, label: "ADMIN_F_LABEL", placeholder: "ADMIN_P_LABEL" },
             { widget: "point", path: "coords", label: "ADMIN_F_COORDS", hint: "ADMIN_H_COORDS", ground: true },
             { widget: "number", path: "radius", label: "ADMIN_F_RADIUS", min: 1, max: 20, unit: "m" },
             { widget: "switch", path: "blip", label: "ADMIN_F_BLIP" },
