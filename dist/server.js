@@ -15683,7 +15683,10 @@ function inReach(source, session) {
 	return session.atm ? isNear(source, session.atm, 3) : atBank(source);
 }
 function bossJobs(source) {
-	return (core.GetJobs(source) ?? []).filter((m) => core.GetJobDefinition(m.job)?.grades[m.grade]?.boss === !0).map((m) => m.job);
+	return online.jobs(source).filter((job) => {
+		let grade = online.jobGrade(source, job);
+		return grade !== null && core.GetJobDefinition(job)?.grades[grade]?.boss === !0;
+	});
 }
 function accounts(source) {
 	let list = [{

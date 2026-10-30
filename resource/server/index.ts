@@ -69,11 +69,12 @@ function inReach(source: number, session: Session): boolean {
 
 /** Society accounts the player runs: the bank account of every job where the player's grade is a boss grade. */
 function bossJobs(source: number): string[] {
-  return (core.GetJobs(source) ?? [])
-    .filter(
-      (m) => core.GetJobDefinition(m.job)?.grades[m.grade]?.boss === true,
-    )
-    .map((m) => m.job);
+  return online.jobs(source).filter((job) => {
+    const grade = online.jobGrade(source, job);
+    return (
+      grade !== null && core.GetJobDefinition(job)?.grades[grade]?.boss === true
+    );
+  });
 }
 
 function accounts(source: number): AccountView[] {
