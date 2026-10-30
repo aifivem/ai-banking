@@ -1,5 +1,6 @@
 import {
   AdminWorld,
+  hud,
   loadLocaleTexts,
   notify,
   onPlayerData,
@@ -59,6 +60,7 @@ class Screen {
     };
     this.open = true;
     SetNuiFocus(true, true);
+    hud.hide("bank");
     send({ action: "open", data: { texts, snapshot } });
   }
 
@@ -66,6 +68,7 @@ class Screen {
     if (!this.open) return;
     this.open = false;
     SetNuiFocus(false, false);
+    hud.show("bank");
     send({ action: "close", data: null });
     emitNet(EVENTS.close);
   }

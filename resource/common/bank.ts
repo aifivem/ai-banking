@@ -1,4 +1,12 @@
-import { bool, int, num, record, str, readPlacePed, type PlacePed } from "@aicore-fivem/lib/shared";
+import {
+  bool,
+  int,
+  num,
+  record,
+  str,
+  readPlacePed,
+  type PlacePed,
+} from "@aicore-fivem/lib/shared";
 
 /** ai-banking's contracts and panel content. No natives. */
 
