@@ -1,4 +1,5 @@
 {
+  "$schema": "./schemas/banks.schema.json",
   "legion_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
@@ -13,7 +14,7 @@
     "label": "Fleeca Bank",
     "coords": {
       "x": 314.2,
-      "y": -279.0,
+      "y": -279,
       "z": 54.17
     },
     "radius": 3,

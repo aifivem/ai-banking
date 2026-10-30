@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-banking/data/settings.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    },
+    "atmModels": {
+      "description": "ATM models: World props that work as ATMs (needs ai-target).",
+      "type": "array",
+      "maxItems": 20,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "maxLength": 48,
+        "pattern": "^[a-z0-9_]{2,48}$"
+      }
+    },
+    "atmLimit": {
+      "description": "ATM limit: Most one ATM withdrawal pays out.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10000000
+    },
+    "transferFee": {
+      "description": "Transfer fee: Percent added to transfers to other players (0 = free).",
+      "type": "number",
+      "minimum": 0,
+      "maximum": 50
+    }
+  },
+  "required": [
+    "atmModels",
+    "atmLimit",
+    "transferFee"
+  ]
+}

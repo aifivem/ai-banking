@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ai-banking/data/banks.json",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "This file's JSON Schema (for editors)."
+    }
+  },
+  "patternProperties": {
+    "^[a-z0-9_]{2,32}$": {
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "Name",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "coords": {
+          "description": "Counter: Stand at the counter and use your position.",
+          "type": "object",
+          "required": [
+            "x",
+            "y",
+            "z"
+          ],
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "z": {
+              "type": "number"
+            }
+          }
+        },
+        "radius": {
+          "description": "Reach",
+          "type": "number",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "blip": {
+          "description": "Map blip",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "label",
+        "coords",
+        "radius",
+        "blip"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
