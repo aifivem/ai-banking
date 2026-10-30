@@ -79,6 +79,7 @@ function rebuild(): void {
   points.clear();
   for (const bank of readBanks(world.get("banks")).values()) {
     points.add(`bank:${bank.id}`, {
+      ped: bank.ped ?? undefined,
       coords: { x: bank.x, y: bank.y, z: bank.z },
       label: Locale("BANK_PROMPT", bank.label),
       icon: "building-columns",
