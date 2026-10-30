@@ -2,17 +2,32 @@ import {
   AdminPanel,
   aiLog,
   aiLogChannels,
+  isNear,
+  money,
   notify,
   onClientCallback,
   onClientEvent,
+  online,
+  PlayerMap,
   provideExport,
   registerExport,
   resourceExport,
 } from "@aicore-fivem/lib/server";
+import {
+  fail,
+  isRecord,
+  readFinite,
+  readId,
+  readInt,
+  readText,
+  type ActionResult,
+  type Vec3,
+} from "@aicore-fivem/lib/shared";
+import type { MoneyRef } from "@aicore-fivem/shared";
 import { Locale } from "common";
 import {
   EVENTS,
-  readBanks,
+  readBank,
   readSettings,
   type AccountView,
   type ActionKind,
@@ -25,28 +40,31 @@ import { bankingSchema } from "./schema";
 
 const core = resourceExport("ai-core");
 const panel = new AdminPanel(bankingSchema);
-/** Panel content, parsed again after every change. */
-const content = {
-  settings: readSettings(panel.get("settings")),
-  banks: readBanks(panel.get("banks")),
-};
-panel.onChange(
-  "settings",
-  () => (content.settings = readSettings(panel.get("settings"))),
-);
-panel.onChange("banks", () => (content.banks = readBanks(panel.get("banks"))));
+/** Panel content, kept current by the panel. */
+const settings = panel.view("settings", readSettings);
+const banks = panel.records("banks", readBank);
 aiLogChannels({ transfers: {}, society: {} });
 
-const fail = (error: string) => ({ ok: false as const, error });
-/** Where each open screen is (an ATM only withdraws and transfers). */
-const sessions = new Map<number, Where>();
+/** How far from the ATM point it opened at a player may stand (the server cannot see ATM props, so it keeps that point). */
+const ATM_REACH = 3;
+
+/** An open screen: where it is (an ATM only withdraws and transfers), the ATM's point, the society accounts it shows. */
+interface Session {
+  where: Where;
+  atm: Vec3 | null;
+  jobs: string[];
+}
+const sessions = new PlayerMap<Session>();
 
 function atBank(source: number): boolean {
-  const [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source)));
-  for (const bank of content.banks.values())
-    if (Math.hypot(x - bank.x, y - bank.y, z - bank.z) <= bank.radius + 2)
-      return true;
+  for (const bank of banks.values())
+    if (isNear(source, bank, bank.radius + 2)) return true;
   return false;
+}
+
+/** The player still stands where the screen opened (a branch, or the ATM point). */
+function inReach(source: number, session: Session): boolean {
+  return session.atm ? isNear(source, session.atm, ATM_REACH) : atBank(source);
 }
 
 /** Society accounts the player runs: the bank account of every job where the player's grade is a boss grade. */
@@ -75,38 +93,64 @@ function accounts(source: number): AccountView[] {
   return list;
 }
 
+/** The ATM point a client names when it opens an ATM screen. */
+function readPoint(value: unknown): Vec3 | null {
+  if (!isRecord(value)) return null;
+  const [x, y, z] = [
+    readFinite(value.x),
+    readFinite(value.y),
+    readFinite(value.z),
+  ];
+  return x !== null && y !== null && z !== null ? { x, y, z } : null;
+}
+
 onClientCallback(
   EVENTS.open,
-  { args: ([where]) => (where === "bank" || where === "atm" ? [where] : null) },
-  (source, where) => {
-    if (where === "bank" && !atBank(source)) return fail("BANK_ERR_FAR");
-    sessions.set(source, where);
-    const snapshot: BankSnapshot = {
+  {
+    args: ([where, atm]) => {
+      const point = where === "atm" ? readPoint(atm) : null;
+      if (where !== "bank" && !point) return null;
+      return [where as Where, point] as const;
+    },
+  },
+  (source, where, atm): BankSnapshot | ActionResult => {
+    if (
+      where === "bank"
+        ? !atBank(source)
+        : !atm || !isNear(source, atm, ATM_REACH)
+    )
+      return fail("BANK_ERR_FAR");
+    const list = accounts(source);
+    sessions.set(source, {
+      where,
+      atm,
+      jobs: list.flatMap((a) =>
+        a.key.startsWith("job:") ? [a.key.slice(4)] : [],
+      ),
+    });
+    return {
       ok: true,
       where,
       cash: core.GetMoney(source, "cash") ?? 0,
-      accounts: accounts(source),
+      accounts: list,
     };
-    return snapshot;
   },
 );
 
 onClientCallback(
   EVENTS.history,
   {
-    args: ([account, before]) =>
-      typeof account === "string" &&
-      (before === null || typeof before === "number")
-        ? [account, before]
-        : null,
+    args: ([account, before]) => {
+      const name = readText(account, 64);
+      const id = before === null ? null : readId(before);
+      return name !== null && (before === null || id !== null)
+        ? [name, id]
+        : null;
+    },
     rate: { count: 4, windowMs: 2000 },
   },
-  async (
-    source,
-    account,
-    before,
-  ): Promise<HistoryPage | ReturnType<typeof fail>> => {
-    const character = core.GetCharacter(source);
+  async (source, account, before): Promise<HistoryPage | ActionResult> => {
+    const character = online.character(source);
     if (!character || !sessions.has(source)) return fail("BANK_ERR_FAR");
     const job = account.startsWith("job:") ? account.slice(4) : null;
     if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
@@ -119,84 +163,76 @@ onClientCallback(
 
 /** The source of a transfer target: a server id or an online character's citizen id. */
 function targetOf(target: unknown): number | null {
-  if (typeof target === "number" && core.GetCharacter(target)) return target;
-  if (typeof target === "string")
-    return (
-      core.GetSourceByCitizenId(target.trim().toUpperCase()) ??
-      core.GetSourceByCitizenId(target.trim())
-    );
-  return null;
+  const id = readId(target);
+  if (id !== null) return online.character(id) ? id : null;
+  const citizen = readText(target, 32);
+  if (citizen === null) return null;
+  return (
+    core.GetSourceByCitizenId(citizen.toUpperCase()) ??
+    core.GetSourceByCitizenId(citizen)
+  );
+}
+
+/** A society account's new balance to every screen that shows it (the acting boss and any other boss of that job). */
+function pushBalance(job: string): void {
+  const balance = core.GetSharedMoney("job", job, "bank") ?? 0;
+  for (const [viewer, session] of sessions)
+    if (session.jobs.includes(job))
+      emitNet(EVENTS.balance, viewer, `job:${job}`, balance);
 }
 
 onClientCallback(
   EVENTS.action,
   {
-    args: ([account, kind, amount, target]) =>
-      typeof account === "string" &&
-      (kind === "deposit" || kind === "withdraw" || kind === "transfer") &&
-      typeof amount === "number" &&
-      Number.isInteger(amount) &&
-      amount > 0 &&
-      amount <= 100_000_000
-        ? [account, kind as ActionKind, amount, target]
-        : null,
+    args: ([account, kind, amount, target]) => {
+      const name = readText(account, 64);
+      const value = readInt(amount, 1, 100_000_000);
+      return name !== null &&
+        value !== null &&
+        (kind === "deposit" || kind === "withdraw" || kind === "transfer")
+        ? [name, kind as ActionKind, value, target]
+        : null;
+    },
     lock: true,
   },
-  (source, account, kind, amount, target) => {
-    const where = sessions.get(source);
-    if (!where || (where === "bank" && !atBank(source)))
-      return fail("BANK_ERR_FAR");
+  (source, account, kind, amount, target): ActionResult => {
+    const session = sessions.get(source);
+    if (!session || !inReach(source, session)) return fail("BANK_ERR_FAR");
     const job = account.startsWith("job:") ? account.slice(4) : null;
     if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
-    if (where === "atm" && (kind === "deposit" || job))
+    if (session.where === "atm" && (kind === "deposit" || job))
       return fail("BANK_ERR_ATM");
     if (
-      where === "atm" &&
+      session.where === "atm" &&
       kind === "withdraw" &&
-      amount > content.settings.atmLimit
+      amount > settings.value.atmLimit
     )
       return fail("BANK_ERR_ATM_LIMIT");
 
+    const cash: MoneyRef = { source, account: "cash" };
+    const bank: MoneyRef = job
+      ? { owner: "job", id: job, account: "bank" }
+      : { source, account: "bank" };
     if (kind === "deposit") {
-      if (!core.RemoveMoney(source, "cash", amount, "bank:deposit"))
+      if (!money.transfer(cash, bank, amount, "bank:deposit"))
         return fail("BANK_ERR_MONEY");
-      const ok = job
-        ? core.AddSharedMoney(
-            "job",
-            job,
-            "bank",
-            amount,
-            `deposit by ${source}`,
-          )
-        : core.AddMoney(source, "bank", amount, "bank:deposit");
-      if (!ok) core.AddMoney(source, "cash", amount, "bank:refund");
     } else if (kind === "withdraw") {
-      const ok = job
-        ? core.RemoveSharedMoney(
-            "job",
-            job,
-            "bank",
-            amount,
-            `withdraw by ${source}`,
-          )
-        : core.RemoveMoney(source, "bank", amount, "bank:withdraw");
-      if (!ok) return fail("BANK_ERR_MONEY");
-      core.AddMoney(source, "cash", amount, "bank:withdraw");
+      if (!money.transfer(bank, cash, amount, "bank:withdraw"))
+        return fail("BANK_ERR_MONEY");
     } else {
       const to = targetOf(target);
       if (to === null || to === source) return fail("BANK_ERR_TARGET");
-      const fee = Math.ceil((amount * content.settings.transferFee) / 100);
-      const from = job
-        ? core.RemoveSharedMoney(
-            "job",
-            job,
-            "bank",
-            amount + fee,
-            `transfer to ${to}`,
-          )
-        : core.RemoveMoney(source, "bank", amount + fee, "bank:transfer");
-      if (!from) return fail("BANK_ERR_MONEY");
-      core.AddMoney(to, "bank", amount, "bank:transfer");
+      const fee = Math.ceil((amount * settings.value.transferFee) / 100);
+      if (
+        !money.transfer(
+          bank,
+          { source: to, account: "bank" },
+          amount,
+          "bank:transfer",
+          fee,
+        )
+      )
+        return fail("BANK_ERR_MONEY");
       notify(to, Locale("BANK_RECEIVED", amount), "success");
       aiLog("transfers", `sent $${amount} (fee $${fee}) from ${account}`, {
         source,
@@ -205,12 +241,7 @@ onClientCallback(
       });
     }
     if (job) {
-      emitNet(
-        EVENTS.balance,
-        source,
-        account,
-        core.GetSharedMoney("job", job, "bank") ?? 0,
-      );
+      pushBalance(job);
       aiLog("society", `${kind} $${amount} on ${job}`, {
         source,
         metadata: { job, kind, amount },
@@ -220,8 +251,13 @@ onClientCallback(
   },
 );
 
-on("playerDropped", () => sessions.delete(Number(globalThis.source)));
 onClientEvent(EVENTS.close, (source) => void sessions.delete(source));
+
+/** A script changed a society account: open screens of it follow. */
+function changed(job: string, ok: boolean): boolean {
+  if (ok) pushBalance(job);
+  return ok;
+}
 
 /** Society money for QB scripts: qb-banking and Renewed-Banking names, an account is a job name. */
 const society: Record<string, (...args: unknown[]) => unknown> = {
@@ -231,23 +267,29 @@ const society: Record<string, (...args: unknown[]) => unknown> = {
       : 0,
   AddMoney: (account, amount, reason) =>
     typeof account === "string" &&
-    typeof amount === "number" &&
-    core.AddSharedMoney(
-      "job",
+    (readFinite(amount) ?? 0) > 0 &&
+    changed(
       account,
-      "bank",
-      amount,
-      typeof reason === "string" ? reason : "script",
+      core.AddSharedMoney(
+        "job",
+        account,
+        "bank",
+        amount as number,
+        typeof reason === "string" ? reason : "script",
+      ),
     ),
   RemoveMoney: (account, amount, reason) =>
     typeof account === "string" &&
-    typeof amount === "number" &&
-    core.RemoveSharedMoney(
-      "job",
+    (readFinite(amount) ?? 0) > 0 &&
+    changed(
       account,
-      "bank",
-      amount,
-      typeof reason === "string" ? reason : "script",
+      core.RemoveSharedMoney(
+        "job",
+        account,
+        "bank",
+        amount as number,
+        typeof reason === "string" ? reason : "script",
+      ),
     ),
 };
 for (const [name, fn] of Object.entries(society)) {

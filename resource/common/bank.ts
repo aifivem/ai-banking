@@ -11,7 +11,7 @@ import {
 /** ai-banking's contracts and panel content. No natives. */
 
 export const EVENTS = {
-  /** Callback: (where: "bank" | "atm") -> BankSnapshot | { ok: false, error } opens the screen. */
+  /** Callback: (where: "bank" | "atm", atm coords | null) -> BankSnapshot | { ok: false, error } opens the screen. */
   open: "ai-banking:open",
   /** Callback: (account, beforeId | null) -> HistoryPage, older transactions of an account. */
   history: "ai-banking:history",
@@ -19,7 +19,7 @@ export const EVENTS = {
   action: "ai-banking:action",
   /** Client -> server: () the screen closed. */
   close: "ai-banking:close",
-  /** Server -> viewer: (account, balance) a shared account changed by this screen's own action. */
+  /** Server -> every viewer of a shared account: (account, balance) it changed through ai-banking. */
   balance: "ai-banking:client:balance",
 } as const;
 
@@ -44,6 +44,7 @@ export interface Bank {
   z: number;
   radius: number;
   blip: boolean;
+  blipStyle: { sprite: number; color: number; scale: number };
 }
 
 /** An account on the screen: `personal` (the character's bank) or `job:<name>` (a society account the boss runs). */
@@ -89,23 +90,25 @@ export function readSettings(raw: unknown): Settings {
   };
 }
 
-export function readBanks(raw: unknown): Map<string, Bank> {
-  const out = new Map<string, Bank>();
-  for (const [id, value] of Object.entries(record(raw))) {
-    const v = record(value);
-    const c = record(v.coords);
-    out.set(id, {
-      ped: readPlacePed(v.ped),
-      id,
-      label: str(v.label, id, 48),
-      x: num(c.x, 0),
-      y: num(c.y, 0),
-      z: num(c.z, 0),
-      radius: num(v.radius, 3, 1, 20),
-      blip: bool(v.blip, true),
-    });
-  }
-  return out;
+/** One branch of the panel's records file (`panel.records` / `world.records`). */
+export function readBank(id: string, v: Record<string, unknown>): Bank {
+  const c = record(v.coords);
+  const style = record(v.blipStyle);
+  return {
+    ped: readPlacePed(v.ped),
+    id,
+    label: str(v.label, id, 48),
+    x: num(c.x, 0),
+    y: num(c.y, 0),
+    z: num(c.z, 0),
+    radius: num(v.radius, 3, 1, 20),
+    blip: bool(v.blip, true),
+    blipStyle: {
+      sprite: int(style.sprite, 108, 0, 1000),
+      color: int(style.color, 2, 0, 100),
+      scale: num(style.scale, 0.7, 0.3, 2),
+    },
+  };
 }
 
 /** Client -> NUI messages. */

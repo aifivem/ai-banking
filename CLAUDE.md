@@ -4,10 +4,12 @@ Banks (branches from the panel) and ATMs (world props, a lib `Points` model poin
 
 ## Decisions
 
-- No money of its own: every balance change goes through ai-core's exports (`AddMoney`, `RemoveMoney`, `*SharedMoney`); the history is read straight from ai-core's ledger table, read only, keyset paged (`server/history.ts`).
+- No money of its own: deposit, withdraw and transfer are one lib `money.transfer` each (both accounts and both ledger rows in one transaction, the transfer fee paid by the sender), the society exports use ai-core's `*SharedMoney`; the history is read straight from ai-core's ledger table, read only, keyset paged (`server/history.ts`).
 - Society accounts: the `bank` account of each job where the player's grade has `boss`.
 - Transfers go to online players only (server id or citizen id), because ai-core keeps money in memory for online characters.
-- The screen gets one snapshot on open; personal balance and cash follow ai-core's player data deltas, a society balance comes back as a delta after the screen's own action. ATMs only withdraw (up to the panel limit) and transfer.
+- The screen gets one snapshot on open; personal balance and cash follow ai-core's player data deltas, a society balance goes as a delta to every open screen that shows that account (each boss of the job) after any change through ai-banking (screen actions and the society exports). ATMs only withdraw (up to the panel limit) and transfer.
+- ATMs are map props the server cannot see: the client sends the ATM's position on open, the server refuses a player more than 3 m from it and checks the same point on every ATM action (a branch re-checks the branch). A modified client can still name a made-up point; locking ATMs fully needs ATM points in the panel.
+- Branch blips: per branch `blip` switch plus a `blipStyle` (panel `blip` widget).
 
 ## Contracts
 

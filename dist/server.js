@@ -48,8 +48,24 @@ function str(value, fallback, max = 64) {
 function record(value) {
 	return typeof value == "object" && value && !Array.isArray(value) ? value : {};
 }
-// ../../../packages/lib/src/shared/records.ts
-const isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
+// ../../../packages/lib/src/shared/strict.ts
+function readFinite(value) {
+	return typeof value == "number" && Number.isFinite(value) ? value : null;
+}
+function readInt(value, min, max) {
+	return Number.isInteger(value) && value >= min && value <= max ? value : null;
+}
+const readId = (value) => readInt(value, 1, 2147483647);
+function readText(value, max) {
+	if (typeof value != "string") return null;
+	let text = value.trim();
+	return text ? text.slice(0, max) : null;
+}
+// ../../../packages/lib/src/shared/action.ts
+const fail = (error) => ({
+	ok: !1,
+	error
+}), isObject = (value) => typeof value == "object" && !!value && !Array.isArray(value);
 function readRecords(raw, readOne) {
 	let out = new Map();
 	if (!isObject(raw)) return out;
@@ -296,7 +312,7 @@ const CORE = {
 	clientPlayerLoadedEvent: "ai-core:client:playerLoaded",
 	clientPlayerUnloadedEvent: "ai-core:client:playerUnloaded",
 	clientCharacterPortraitEvent: "ai-core:client:characterPortrait",
-	clientCharacterLookEvent: "ai-core:client:characterLook",
+	characterLooksEvent: "ai-core:client:characterLooks",
 	clientPromptPressedEvent: "ai-core:client:promptPressed",
 	clientCacheEvent: "ai-core:client:cache",
 	clientHudVisibleEvent: "ai-core:client:hudVisible",
@@ -360,6 +376,11 @@ function loadLocaleTexts(resource = GetCurrentResourceName()) {
 }
 // ../../../packages/lib/src/fivem/callbackNames.ts
 const requestEvent = (name) => `aicore:cb:${name}`, responseEvent = (resource) => `aicore:cbr:${resource}`;
+// ../../../packages/lib/src/server/position.ts
+function isNear(source, point, metres) {
+	let [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source))), dx = x - point.x, dy = y - point.y, dz = z - point.z;
+	return dx * dx + dy * dy + dz * dz <= metres * metres;
+}
 resourceExport(CORE.resource);
 const log$5 = createLogger(GetCurrentResourceName()), gates = new Set();
 on("playerDropped", () => {
@@ -469,7 +490,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$14 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$15 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -483,7 +504,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$14.GetLookupValues(source);
+			list = core$15.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -686,7 +707,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$13 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
+const core$14 = resourceExport(CORE.resource), DEFAULT_KEY = "^[a-z0-9_]{2,32}$";
 function imported(spec, value) {
 	let base = clone(spec.newRecord ?? {}), out = {};
 	for (let name of Object.keys(spec.sections)) {
@@ -710,7 +731,7 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$13.RegisterAdminPanel(this.resource));
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges)), setImmediate(() => core$14.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -844,7 +865,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$13.AdminPanelChanged({
+		if (core$14.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -883,7 +904,7 @@ function notify(source, text, kind = "info", duration) {
 }
 resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/online.ts
-const core$11 = resourceExport(CORE.resource);
+const core$12 = resourceExport(CORE.resource);
 var OnlinePlayers = class {
 	players = new Map();
 	onDuty = new Map();
@@ -892,7 +913,7 @@ var OnlinePlayers = class {
 		if (this.started) return;
 		this.started = !0;
 		let load = (source, character) => {
-			this.put(source, character, (core$11.GetJobs(source) ?? []).map((m) => m.job), (core$11.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$11.GetDutyJob(source));
+			this.put(source, character, (core$12.GetJobs(source) ?? []).map((m) => m.job), (core$12.GetGangs(source) ?? []).map((m) => m.gang)), this.setDuty(source, core$12.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => {
 			let player = this.players.get(source);
@@ -901,8 +922,8 @@ var OnlinePlayers = class {
 			let player = this.players.get(source);
 			player && (player.gangs = gangs.map((m) => m.gang));
 		}), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$11.GetLoadedSources()) {
-			let character = core$11.GetCharacter(source);
+		for (let source of core$12.GetLoadedSources()) {
+			let character = core$12.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -945,8 +966,25 @@ var OnlinePlayers = class {
 		return this.start(), this.onDuty.get(job) ?? EMPTY;
 	}
 };
-const EMPTY = new Set();
-new OnlinePlayers(), resourceExport(CORE.resource), resourceExport(CORE.resource), createLogger(GetCurrentResourceName());
+const EMPTY = new Set(), online = new OnlinePlayers();
+resourceExport(CORE.resource), resourceExport(CORE.resource), createLogger(GetCurrentResourceName());
+const dropped = new Set();
+let listening = !1;
+function onDropped(fn) {
+	listening || (listening = !0, on("playerDropped", () => {
+		let source = Number(globalThis.source);
+		for (let handler of dropped) handler(source);
+	})), dropped.add(fn);
+}
+var PlayerMap = class extends Map {
+	constructor(options = {}) {
+		super(), onDropped((source) => {
+			if (!this.has(source)) return;
+			let value = this.get(source);
+			this.delete(source), options.onDrop?.(source, value);
+		});
+	}
+};
 // ../../../packages/lib/src/server/command.ts
 const resource$3 = GetCurrentResourceName();
 createLogger(resource$3), new class {
@@ -15227,7 +15265,10 @@ const mysql = {
 	setPoolSize,
 	close: closePool
 };
-createLogger("aicore-lib"), IsDuplicityVersion(), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
+createLogger("aicore-lib"), IsDuplicityVersion(), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
+// ../../../packages/lib/src/server/money.ts
+const core$6 = resourceExport(CORE.resource), money = { transfer: (from, to, amount, reason, fee) => core$6.TransferMoney(from, to, amount, reason, fee) };
+resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
 // resource/common/locale.ts
 const Locale = createLocale();
 GetCurrentResourceName(), IsDuplicityVersion();
@@ -15247,22 +15288,23 @@ function readSettings(raw) {
 		transferFee: num(s.transferFee, 0, 0, 50)
 	};
 }
-function readBanks(raw) {
-	let out = new Map();
-	for (let [id, value] of Object.entries(record(raw))) {
-		let v = record(value), c = record(v.coords);
-		out.set(id, {
-			ped: readPlacePed(v.ped),
-			id,
-			label: str(v.label, id, 48),
-			x: num(c.x, 0),
-			y: num(c.y, 0),
-			z: num(c.z, 0),
-			radius: num(v.radius, 3, 1, 20),
-			blip: bool(v.blip, !0)
-		});
-	}
-	return out;
+function readBank(id, v) {
+	let c = record(v.coords), style = record(v.blipStyle);
+	return {
+		ped: readPlacePed(v.ped),
+		id,
+		label: str(v.label, id, 48),
+		x: num(c.x, 0),
+		y: num(c.y, 0),
+		z: num(c.z, 0),
+		radius: num(v.radius, 3, 1, 20),
+		blip: bool(v.blip, !0),
+		blipStyle: {
+			sprite: int(style.sprite, 108, 0, 1e3),
+			color: int(style.color, 2, 0, 100),
+			scale: num(style.scale, .7, .3, 2)
+		}
+	};
 }
 async function loadHistory(ownerType, ownerId, account, beforeId) {
 	let found = await mysql.scalar("SELECT id FROM ai_core_accounts WHERE owner_type = ? AND owner_id = ? AND name = ?", [
@@ -15308,7 +15350,12 @@ const bankingSchema = {
 					z: 0
 				},
 				radius: 3,
-				blip: !0
+				blip: !0,
+				blipStyle: {
+					sprite: 108,
+					color: 2,
+					scale: .7
+				}
 			},
 			sections: {
 				ped: PLACE_PED_SPEC,
@@ -15323,7 +15370,30 @@ const bankingSchema = {
 					min: 1,
 					max: 20
 				},
-				blip: { type: "bool" }
+				blip: { type: "bool" },
+				blipStyle: {
+					type: "object",
+					optional: !0,
+					fields: {
+						sprite: {
+							type: "number",
+							min: 0,
+							max: 1e3,
+							integer: !0
+						},
+						color: {
+							type: "number",
+							min: 0,
+							max: 100,
+							integer: !0
+						},
+						scale: {
+							type: "number",
+							min: .3,
+							max: 2
+						}
+					}
+				}
 			}
 		},
 		settings: {
@@ -15389,6 +15459,15 @@ const bankingSchema = {
 					widget: "switch",
 					path: "blip",
 					label: "ADMIN_F_BLIP"
+				},
+				{
+					widget: "blip",
+					path: "blipStyle",
+					label: "ADMIN_F_BLIP_STYLE",
+					showIf: {
+						path: "blip",
+						values: [!0]
+					}
 				}
 			]
 		}, {
@@ -15438,22 +15517,18 @@ const bankingSchema = {
 			]
 		}]
 	}]
-}, core = resourceExport("ai-core"), panel = new AdminPanel(bankingSchema), content = {
-	settings: readSettings(panel.get("settings")),
-	banks: readBanks(panel.get("banks"))
-};
-panel.onChange("settings", () => content.settings = readSettings(panel.get("settings"))), panel.onChange("banks", () => content.banks = readBanks(panel.get("banks"))), aiLogChannels({
+}, core = resourceExport("ai-core"), panel = new AdminPanel(bankingSchema), settings = panel.view("settings", readSettings), banks = panel.records("banks", readBank);
+aiLogChannels({
 	transfers: {},
 	society: {}
 });
-const fail = (error) => ({
-	ok: !1,
-	error
-}), sessions = new Map();
+const sessions = new PlayerMap();
 function atBank(source) {
-	let [x = 0, y = 0, z = 0] = GetEntityCoords(GetPlayerPed(String(source)));
-	for (let bank of content.banks.values()) if (Math.hypot(x - bank.x, y - bank.y, z - bank.z) <= bank.radius + 2) return !0;
+	for (let bank of banks.values()) if (isNear(source, bank, bank.radius + 2)) return !0;
 	return !1;
+}
+function inReach(source, session) {
+	return session.atm ? isNear(source, session.atm, 3) : atBank(source);
 }
 function bossJobs(source) {
 	let defs = core.GetJobDefinitions();
@@ -15472,19 +15547,46 @@ function accounts(source) {
 	});
 	return list;
 }
-onClientCallback(EVENTS.open, { args: ([where]) => where === "bank" || where === "atm" ? [where] : null }, (source, where) => where === "bank" && !atBank(source) ? fail("BANK_ERR_FAR") : (sessions.set(source, where), {
-	ok: !0,
-	where,
-	cash: core.GetMoney(source, "cash") ?? 0,
-	accounts: accounts(source)
-})), onClientCallback(EVENTS.history, {
-	args: ([account, before]) => typeof account == "string" && (before === null || typeof before == "number") ? [account, before] : null,
+function readPoint(value) {
+	if (!isRecord(value)) return null;
+	let [x, y, z] = [
+		readFinite(value.x),
+		readFinite(value.y),
+		readFinite(value.z)
+	];
+	return x !== null && y !== null && z !== null ? {
+		x,
+		y,
+		z
+	} : null;
+}
+onClientCallback(EVENTS.open, { args: ([where, atm]) => {
+	let point = where === "atm" ? readPoint(atm) : null;
+	return where !== "bank" && !point ? null : [where, point];
+} }, (source, where, atm) => {
+	if (where === "bank" ? !atBank(source) : !atm || !isNear(source, atm, 3)) return fail("BANK_ERR_FAR");
+	let list = accounts(source);
+	return sessions.set(source, {
+		where,
+		atm,
+		jobs: list.flatMap((a) => a.key.startsWith("job:") ? [a.key.slice(4)] : [])
+	}), {
+		ok: !0,
+		where,
+		cash: core.GetMoney(source, "cash") ?? 0,
+		accounts: list
+	};
+}), onClientCallback(EVENTS.history, {
+	args: ([account, before]) => {
+		let name = readText(account, 64), id = before === null ? null : readId(before);
+		return name !== null && (before === null || id !== null) ? [name, id] : null;
+	},
 	rate: {
 		count: 4,
 		windowMs: 2e3
 	}
 }, async (source, account, before) => {
-	let character = core.GetCharacter(source);
+	let character = online.character(source);
 	if (!character || !sessions.has(source)) return fail("BANK_ERR_FAR");
 	let job = account.startsWith("job:") ? account.slice(4) : null;
 	return job && !bossJobs(source).includes(job) ? fail("BANK_ERR_DENIED") : {
@@ -15494,35 +15596,57 @@ onClientCallback(EVENTS.open, { args: ([where]) => where === "bank" || where ===
 	};
 });
 function targetOf(target) {
-	return typeof target == "number" && core.GetCharacter(target) ? target : typeof target == "string" ? core.GetSourceByCitizenId(target.trim().toUpperCase()) ?? core.GetSourceByCitizenId(target.trim()) : null;
+	let id = readId(target);
+	if (id !== null) return online.character(id) ? id : null;
+	let citizen = readText(target, 32);
+	return citizen === null ? null : core.GetSourceByCitizenId(citizen.toUpperCase()) ?? core.GetSourceByCitizenId(citizen);
+}
+function pushBalance(job) {
+	let balance = core.GetSharedMoney("job", job, "bank") ?? 0;
+	for (let [viewer, session] of sessions) session.jobs.includes(job) && emitNet(EVENTS.balance, viewer, `job:${job}`, balance);
 }
 onClientCallback(EVENTS.action, {
-	args: ([account, kind, amount, target]) => typeof account == "string" && (kind === "deposit" || kind === "withdraw" || kind === "transfer") && typeof amount == "number" && Number.isInteger(amount) && amount > 0 && amount <= 1e8 ? [
-		account,
-		kind,
-		amount,
-		target
-	] : null,
+	args: ([account, kind, amount, target]) => {
+		let name = readText(account, 64), value = readInt(amount, 1, 1e8);
+		return name !== null && value !== null && (kind === "deposit" || kind === "withdraw" || kind === "transfer") ? [
+			name,
+			kind,
+			value,
+			target
+		] : null;
+	},
 	lock: !0
 }, (source, account, kind, amount, target) => {
-	let where = sessions.get(source);
-	if (!where || where === "bank" && !atBank(source)) return fail("BANK_ERR_FAR");
+	let session = sessions.get(source);
+	if (!session || !inReach(source, session)) return fail("BANK_ERR_FAR");
 	let job = account.startsWith("job:") ? account.slice(4) : null;
 	if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
-	if (where === "atm" && (kind === "deposit" || job)) return fail("BANK_ERR_ATM");
-	if (where === "atm" && kind === "withdraw" && amount > content.settings.atmLimit) return fail("BANK_ERR_ATM_LIMIT");
+	if (session.where === "atm" && (kind === "deposit" || job)) return fail("BANK_ERR_ATM");
+	if (session.where === "atm" && kind === "withdraw" && amount > settings.value.atmLimit) return fail("BANK_ERR_ATM_LIMIT");
+	let cash = {
+		source,
+		account: "cash"
+	}, bank = job ? {
+		owner: "job",
+		id: job,
+		account: "bank"
+	} : {
+		source,
+		account: "bank"
+	};
 	if (kind === "deposit") {
-		if (!core.RemoveMoney(source, "cash", amount, "bank:deposit")) return fail("BANK_ERR_MONEY");
-		(job ? core.AddSharedMoney("job", job, "bank", amount, `deposit by ${source}`) : core.AddMoney(source, "bank", amount, "bank:deposit")) || core.AddMoney(source, "cash", amount, "bank:refund");
+		if (!money.transfer(cash, bank, amount, "bank:deposit")) return fail("BANK_ERR_MONEY");
 	} else if (kind === "withdraw") {
-		if (!(job ? core.RemoveSharedMoney("job", job, "bank", amount, `withdraw by ${source}`) : core.RemoveMoney(source, "bank", amount, "bank:withdraw"))) return fail("BANK_ERR_MONEY");
-		core.AddMoney(source, "cash", amount, "bank:withdraw");
+		if (!money.transfer(bank, cash, amount, "bank:withdraw")) return fail("BANK_ERR_MONEY");
 	} else {
 		let to = targetOf(target);
 		if (to === null || to === source) return fail("BANK_ERR_TARGET");
-		let fee = Math.ceil(amount * content.settings.transferFee / 100);
-		if (!(job ? core.RemoveSharedMoney("job", job, "bank", amount + fee, `transfer to ${to}`) : core.RemoveMoney(source, "bank", amount + fee, "bank:transfer"))) return fail("BANK_ERR_MONEY");
-		core.AddMoney(to, "bank", amount, "bank:transfer"), notify(to, Locale("BANK_RECEIVED", amount), "success"), aiLog("transfers", `sent $${amount} (fee $${fee}) from ${account}`, {
+		let fee = Math.ceil(amount * settings.value.transferFee / 100);
+		if (!money.transfer(bank, {
+			source: to,
+			account: "bank"
+		}, amount, "bank:transfer", fee)) return fail("BANK_ERR_MONEY");
+		notify(to, Locale("BANK_RECEIVED", amount), "success"), aiLog("transfers", `sent $${amount} (fee $${fee}) from ${account}`, {
 			source,
 			target: to,
 			metadata: {
@@ -15532,7 +15656,7 @@ onClientCallback(EVENTS.action, {
 			}
 		});
 	}
-	return job && (emitNet(EVENTS.balance, source, account, core.GetSharedMoney("job", job, "bank") ?? 0), aiLog("society", `${kind} $${amount} on ${job}`, {
+	return job && (pushBalance(job), aiLog("society", `${kind} $${amount} on ${job}`, {
 		source,
 		metadata: {
 			job,
@@ -15540,11 +15664,14 @@ onClientCallback(EVENTS.action, {
 			amount
 		}
 	})), { ok: !0 };
-}), on("playerDropped", () => sessions.delete(Number(globalThis.source))), onClientEvent(EVENTS.close, (source) => void sessions.delete(source));
+}), onClientEvent(EVENTS.close, (source) => void sessions.delete(source));
+function changed(job, ok) {
+	return ok && pushBalance(job), ok;
+}
 const society = {
 	GetAccountBalance: (account) => typeof account == "string" ? core.GetSharedMoney("job", account, "bank") ?? 0 : 0,
-	AddMoney: (account, amount, reason) => typeof account == "string" && typeof amount == "number" && core.AddSharedMoney("job", account, "bank", amount, typeof reason == "string" ? reason : "script"),
-	RemoveMoney: (account, amount, reason) => typeof account == "string" && typeof amount == "number" && core.RemoveSharedMoney("job", account, "bank", amount, typeof reason == "string" ? reason : "script")
+	AddMoney: (account, amount, reason) => typeof account == "string" && (readFinite(amount) ?? 0) > 0 && changed(account, core.AddSharedMoney("job", account, "bank", amount, typeof reason == "string" ? reason : "script")),
+	RemoveMoney: (account, amount, reason) => typeof account == "string" && (readFinite(amount) ?? 0) > 0 && changed(account, core.RemoveSharedMoney("job", account, "bank", amount, typeof reason == "string" ? reason : "script"))
 };
 for (let [name, fn] of Object.entries(society)) registerExport(name, fn), provideExport("qb-banking", name, fn);
 provideExport("Renewed-Banking", "getAccountMoney", society.GetAccountBalance ?? (() => 0)), provideExport("Renewed-Banking", "addAccountMoney", society.AddMoney ?? (() => !1)), provideExport("Renewed-Banking", "removeAccountMoney", society.RemoveMoney ?? (() => !1));

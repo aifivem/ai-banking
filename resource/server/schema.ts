@@ -15,6 +15,7 @@ export const bankingSchema: PanelSchema = {
         coords: { x: 0, y: 0, z: 0 },
         radius: 3,
         blip: true,
+        blipStyle: { sprite: 108, color: 2, scale: 0.7 },
       },
       sections: {
         ped: PLACE_PED_SPEC,
@@ -22,6 +23,15 @@ export const bankingSchema: PanelSchema = {
         coords: { type: "vec3" },
         radius: { type: "number", min: 1, max: 20 },
         blip: { type: "bool" },
+        blipStyle: {
+          type: "object",
+          optional: true,
+          fields: {
+            sprite: { type: "number", min: 0, max: 1000, integer: true },
+            color: { type: "number", min: 0, max: 100, integer: true },
+            scale: { type: "number", min: 0.3, max: 2 },
+          },
+        },
       },
     },
     settings: {
@@ -77,6 +87,12 @@ export const bankingSchema: PanelSchema = {
               unit: "m",
             },
             { widget: "switch", path: "blip", label: "ADMIN_F_BLIP" },
+            {
+              widget: "blip",
+              path: "blipStyle",
+              label: "ADMIN_F_BLIP_STYLE",
+              showIf: { path: "blip", values: [true] },
+            },
           ],
         },
         {
