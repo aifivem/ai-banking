@@ -17,8 +17,8 @@ type Data<A extends NuiMessage["action"]> = Extract<NuiMessage, { action: A }>["
 const OK = { mockData: { ok: true } };
 const OPEN_MOCK = { mockData: MOCK_OPEN, mockDelay: 100 };
 const HISTORY_MOCK = { mockData: MOCK_HISTORY, mockDelay: 300 };
-/** Header tab size + gap in vh, for the sliding green square. */
-const TAB_STEP = 4.6;
+/** Header tab width + gap in vh, for the sliding green pill (every tab has the same width). */
+const TAB_STEP = 13;
 
 // The client is this resource's own code: its messages are trusted in shape (types from common/bank).
 const onOpen = (d: Data<"open">) => {
@@ -58,7 +58,7 @@ export function App() {
           <div className="relative flex gap-[0.6vh]" role="tablist">
             <motion.span
               aria-hidden
-              className="absolute top-0 left-0 size-[4vh] rounded-[0.8vh] bg-tgi-green"
+              className="absolute top-0 left-0 h-[4vh] w-[12.4vh] rounded-[0.8vh] bg-tgi-green"
               initial={false}
               animate={{ x: `${active * TAB_STEP}vh` }}
               transition={{ type: "spring", duration: 0.3, bounce: 0 }}
@@ -69,15 +69,14 @@ export function App() {
                 type="button"
                 role="tab"
                 aria-selected={k === kind}
-                aria-label={t(`UI_${k.toUpperCase()}`)}
-                title={t(`UI_${k.toUpperCase()}`)}
                 onClick={() => setKind(k)}
                 className={cn(
-                  "relative flex size-[4vh] items-center justify-center rounded-[0.8vh] text-[1.6vh] transition-[background-color,color,transform] duration-150 active:[transform:scale(0.94)]",
-                  k === kind ? "text-tgi-green-text" : "bg-control text-text-3 hover:bg-control-hover hover:text-white",
+                  "relative flex h-[4vh] w-[12.4vh] items-center justify-center gap-[0.8vh] rounded-[0.8vh] text-[1.3vh] transition-[background-color,color,transform] duration-150 active:[transform:scale(0.96)]",
+                  k === kind ? "font-bold text-tgi-green-text" : "bg-control font-semibold text-text-3 hover:bg-control-hover hover:text-white",
                 )}
               >
-                <FontAwesomeIcon icon={KIND_ICON[k]} />
+                <FontAwesomeIcon icon={KIND_ICON[k]} className="text-[1.4vh]" />
+                {t(`UI_${k.toUpperCase()}`)}
               </button>
             ))}
           </div>

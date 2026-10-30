@@ -18,4 +18,4 @@ Banks (branches from the panel) and ATMs (world props through ai-target): person
 
 - Server: open, history, actions, exports `resource/server/index.ts`; ledger reads `server/history.ts`.
 - Client: branches, ATM option, NUI bridge `resource/client/index.ts`.
-- NUI (tgiann-bank look): shell and icon tabs `web/src/App.tsx`, card / form / history in `web/src/features/`; preview `bun run webdev` (`?atm=1`).
+- NUI (tgiann-bank look): shell and labelled header tabs `web/src/App.tsx`, card / accounts / activity (in and out of the loaded history page) / form / history in `web/src/features/`; preview `bun run webdev` (`?atm=1`).
