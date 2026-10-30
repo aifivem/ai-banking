@@ -2,10 +2,11 @@ import {
   bool,
   int,
   num,
+  type PlacePed,
+  readBlipStyle,
+  readPlacePed,
   record,
   str,
-  readPlacePed,
-  type PlacePed,
 } from "@aicore-fivem/lib/shared";
 
 /** ai-banking's contracts and panel content. No natives. */
@@ -103,11 +104,7 @@ export function readBank(id: string, v: Record<string, unknown>): Bank {
     z: num(c.z, 0),
     radius: num(v.radius, 3, 1, 20),
     blip: bool(v.blip, true),
-    blipStyle: {
-      sprite: int(style.sprite, 108, 0, 1000),
-      color: int(style.color, 2, 0, 100),
-      scale: num(style.scale, 0.7, 0.3, 2),
-    },
+    blipStyle: readBlipStyle(style, { sprite: 108, color: 2, scale: 0.7 }),
   };
 }
 
