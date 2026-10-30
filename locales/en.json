@@ -27,7 +27,7 @@
   "ADMIN_TAB_BANKS": "Banks",
   "ADMIN_TAB_BANKS_DESC": "Branches where players deposit, withdraw and see their transactions.",
   "ADMIN_NEW_BANK": "New bank",
-  "ADMIN_DELETE_BANK": "Delete this bank?",
+  "ADMIN_DELETE_BANK": "Delete bank",
   "ADMIN_C_BANK": "Bank",
   "ADMIN_C_BANK_DESC": "Players open the bank at its counter.",
   "ADMIN_F_LABEL": "Name",
