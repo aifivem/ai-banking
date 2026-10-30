@@ -13,6 +13,8 @@
   "UI_BANK": "Bank",
   "UI_ATM": "ATM",
   "UI_CASH": "Cash",
+  "UI_BALANCE": "Balance",
+  "UI_ACCOUNTS": "Accounts",
   "UI_HISTORY": "Transactions",
   "UI_LOADING": "Loading",
   "UI_NO_HISTORY": "No transactions yet",

@@ -18,7 +18,8 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
   },
   server: {
-    fs: { allow: [".."] },
+    // bun keeps packages in the workspace root store (node_modules/.bun): the preview must serve fonts from there.
+    fs: { allow: ["..", "../../../../node_modules"] },
   },
   // Old FiveM CEF (Chromium ~103): no oklch, color-mix or @media (hover: hover).
   css: {

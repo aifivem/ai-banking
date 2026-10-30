@@ -4,23 +4,24 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { cn } from "../../lib/utils";
 
-/** Dark Minimal buttons (docs/design.md): outline primary, secondary, destructive; `filled` for the view's one main action. */
+/** TGIANN pill buttons (docs/design.md): filled green primary (one per view), grey secondary, red destructive, round icon. */
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-[0.8vh] rounded-[0.6vh] border px-[1.6vh] whitespace-nowrap transition-[background-color,color,transform] duration-150 ease-out enabled:active:[transform:scale(0.97)] disabled:cursor-not-allowed disabled:opacity-40",
+  "inline-flex shrink-0 items-center justify-center gap-[0.8vh] rounded-full px-[2vh] whitespace-nowrap transition-[background-color,color,transform] duration-150 ease-out enabled:active:[transform:scale(0.97)] disabled:cursor-not-allowed disabled:opacity-40",
   {
     variants: {
       variant: {
-        primary: "border-accent bg-panel font-semibold text-accent hover:bg-[rgba(var(--accent-rgb),0.12)]",
-        secondary: "border-line bg-panel font-medium text-text-2 hover:bg-raised hover:text-text",
-        destructive: "border-[rgba(var(--danger-rgb),0.6)] bg-panel font-medium text-danger hover:bg-[rgba(var(--danger-rgb),0.12)]",
-        filled: "border-accent bg-accent font-semibold text-accent-text hover:bg-accent-hover",
-        icon: "size-[3vh] border-line bg-raised px-0 text-[1.2vh] text-text-2 hover:text-text enabled:active:[transform:scale(0.9)]",
+        primary: "bg-tgi-green font-bold text-tgi-green-text enabled:hover:bg-tgi-green-hover",
+        secondary: "bg-control font-semibold text-white enabled:hover:bg-control-hover",
+        grey: "bg-white/6 font-semibold text-text-3 enabled:hover:bg-white/12 enabled:hover:text-white",
+        destructive: "bg-danger-solid font-bold text-white enabled:hover:bg-danger",
+        icon: "size-[4vh] bg-control px-0 text-[1.6vh] text-text-3 enabled:hover:bg-control-hover enabled:hover:text-white enabled:active:[transform:scale(0.92)]",
       },
       size: {
-        md: "h-[4.2vh] text-[1.45vh]",
-        sm: "h-[3.4vh] text-[1.25vh]",
+        md: "h-[4.4vh] text-[1.5vh]",
+        sm: "h-[3.6vh] text-[1.3vh]",
       },
     },
+    compoundVariants: [{ variant: "icon", className: "h-[4vh]" }],
     defaultVariants: { variant: "secondary", size: "md" },
   },
 );
