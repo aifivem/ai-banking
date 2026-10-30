@@ -1,11 +1,9 @@
-import { AdminWorld, hidePrompt, loadLocaleTexts, notify, onPlayerData, onPromptPressed, onServerEvent, optionalExport, showPrompt, triggerServerCallback, Zones } from "@aicore-fivem/lib/client";
+import { AdminWorld, loadLocaleTexts, notify, onPlayerData, onServerEvent, optionalExport, Points, triggerServerCallback } from "@aicore-fivem/lib/client";
 import { Locale } from "common";
 import { EVENTS, readBanks, readSettings, type BankSnapshot, type HistoryPage, type NuiMessage, type Where } from "common/bank";
 
 const world = new AdminWorld(["banks", "settings"]);
 const texts = loadLocaleTexts();
-const BLIP_TEXT = "AIBANK_BLIP";
-AddTextEntry(BLIP_TEXT, "~a~");
 const send = (m: NuiMessage): void => SendNUIMessage(m);
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null;
 const errorText = (v: unknown, fallback: string): string => {
@@ -13,7 +11,7 @@ const errorText = (v: unknown, fallback: string): string => {
   return texts[key] ?? key;
 };
 
-/** The bank screen: opened at a branch (prompt) or an ATM (ai-target option); money changes arrive as deltas. */
+/** The bank screen: opened at a branch point or an ATM (ai-target option); money changes arrive as deltas. */
 class Screen {
   open = false;
 
@@ -43,46 +41,27 @@ class Screen {
 
 const screen = new Screen();
 
-/** Branch zones with ai-core's prompt, blips; ATMs through ai-target when it runs. */
-class Places {
-  private readonly zones = new Zones();
-  private blips: number[] = [];
-
-  rebuild(): void {
-    this.zones.clear();
-    for (const blip of this.blips) RemoveBlip(blip);
-    this.blips = [];
-    for (const bank of readBanks(world.get("banks")).values()) {
-      const id = `bank:${bank.id}`;
-      this.zones.add(id, {
-        shape: { type: "sphere", center: { x: bank.x, y: bank.y, z: bank.z }, radius: bank.radius },
-        interval: 500,
-        onEnter: () => showPrompt(id, Locale("BANK_PROMPT", bank.label)),
-        onExit: () => hidePrompt(id),
-      });
-      if (!bank.blip) continue;
-      const blip = AddBlipForCoord(bank.x, bank.y, bank.z);
-      SetBlipSprite(blip, 108);
-      SetBlipColour(blip, 2);
-      SetBlipScale(blip, 0.7);
-      SetBlipAsShortRange(blip, true);
-      BeginTextCommandSetBlipName(BLIP_TEXT);
-      AddTextComponentSubstringPlayerName(bank.label);
-      EndTextCommandSetBlipName(blip);
-      this.blips.push(blip);
-    }
-    const target = optionalExport("ai-target");
-    const models = readSettings(world.get("settings")).atmModels;
-    if (target && models.length) target.addModel(models, [{ name: "ai-banking:atm", label: Locale("ATM_USE"), icon: "fa-solid fa-credit-card", distance: 1.5, onSelect: () => void screen.show("atm") }]);
+/** Branch points (prompt or target, with blips); ATMs through ai-target's model options when it runs. */
+const points = new Points();
+function rebuild(): void {
+  points.clear();
+  for (const bank of readBanks(world.get("banks")).values()) {
+    points.add(`bank:${bank.id}`, {
+      coords: { x: bank.x, y: bank.y, z: bank.z },
+      label: Locale("BANK_PROMPT", bank.label),
+      icon: "building-columns",
+      radius: bank.radius,
+      blip: bank.blip ? { sprite: 108, color: 2, scale: 0.7, label: bank.label } : undefined,
+      onPressed: () => screen.show("bank"),
+    });
   }
+  const target = optionalExport("ai-target");
+  const models = readSettings(world.get("settings")).atmModels;
+  if (target && models.length) target.addModel(models, [{ name: "ai-banking:atm", label: Locale("ATM_USE"), icon: "fa-solid fa-credit-card", distance: 1.5, onSelect: () => void screen.show("atm") }]);
 }
 
-const places = new Places();
-places.rebuild();
-world.onChange("banks", () => places.rebuild());
-onPromptPressed((id) => {
-  if (id.startsWith("bank:")) void screen.show("bank");
-});
+rebuild();
+world.onChange("banks", rebuild);
 
 onPlayerData("money", (money) => {
   if (screen.open && typeof money.cash === "number") send({ action: "cash", data: money.cash });
