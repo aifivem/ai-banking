@@ -1,4 +1,4 @@
-import type { PanelSchema } from "@aicore-fivem/shared"
+import type { PanelSchema } from "@aicore-fivem/shared";
 
 /** ai-banking's panel: bank branches, ATM models and limits. */
 export const bankingSchema: PanelSchema = {
@@ -123,4 +123,4 @@ export const bankingSchema: PanelSchema = {
       ],
     },
   ],
-}
+};

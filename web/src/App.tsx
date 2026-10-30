@@ -1,13 +1,13 @@
-import { useEffect, useState } from "react"
-import { fetchNui, useNuiEvent } from "fivem-nui-react"
-import { motion } from "motion/react"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faDoorOpen } from "@fortawesome/free-solid-svg-icons"
-import type { ActionKind, NuiMessage } from "../../resource/common/bank"
-import { Button } from "./components/ui/button"
-import { MOCK_HISTORY, MOCK_OPEN } from "./dev/mock"
-import { setTexts, useLang } from "./lib/lang"
-import { cn } from "./lib/utils"
+import { useEffect, useState } from "react";
+import { fetchNui, useNuiEvent } from "fivem-nui-react";
+import { motion } from "motion/react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faDoorOpen } from "@fortawesome/free-solid-svg-icons";
+import type { ActionKind, NuiMessage } from "../../resource/common/bank";
+import { Button } from "./components/ui/button";
+import { MOCK_HISTORY, MOCK_OPEN } from "./dev/mock";
+import { setTexts, useLang } from "./lib/lang";
+import { cn } from "./lib/utils";
 import {
   balanceSet,
   cashSet,
@@ -16,57 +16,57 @@ import {
   opened,
   store,
   useAppSelector,
-} from "./store/bank"
-import { Accounts } from "./features/Accounts"
-import { ActionForm, KIND_ICON } from "./features/ActionForm"
-import { History } from "./features/History"
+} from "./store/bank";
+import { Accounts } from "./features/Accounts";
+import { ActionForm, KIND_ICON } from "./features/ActionForm";
+import { History } from "./features/History";
 
 type Data<A extends NuiMessage["action"]> = Extract<
   NuiMessage,
   { action: A }
->["data"]
-const OK = { mockData: { ok: true } }
-const OPEN_MOCK = { mockData: MOCK_OPEN, mockDelay: 100 }
-const HISTORY_MOCK = { mockData: MOCK_HISTORY, mockDelay: 300 }
+>["data"];
+const OK = { mockData: { ok: true } };
+const OPEN_MOCK = { mockData: MOCK_OPEN, mockDelay: 100 };
+const HISTORY_MOCK = { mockData: MOCK_HISTORY, mockDelay: 300 };
 /** Header tab width + gap in vh, for the sliding green pill (every tab has the same width). */
-const TAB_STEP = 13
+const TAB_STEP = 13;
 
 // The client is this resource's own code: its messages are trusted in shape (types from common/bank).
 const onOpen = (d: Data<"open">) => {
-  setTexts(d.texts)
-  store.dispatch(opened(d.snapshot))
-}
-const close = () => void fetchNui("close", undefined, OK)
+  setTexts(d.texts);
+  store.dispatch(opened(d.snapshot));
+};
+const close = () => void fetchNui("close", undefined, OK);
 
 /** The bank (tgiann-bank look): header with icon tabs, the account card and list left, the action and the history right. */
 export function App() {
-  const t = useLang()
-  const { snapshot, selected: account } = useAppSelector((s) => s.bank)
-  const [kind, setKind] = useState<ActionKind>("withdraw")
+  const t = useLang();
+  const { snapshot, selected: account } = useAppSelector((s) => s.bank);
+  const [kind, setKind] = useState<ActionKind>("withdraw");
 
-  useNuiEvent("open", onOpen, OPEN_MOCK)
-  useNuiEvent("close", () => store.dispatch(closed()))
-  useNuiEvent<Data<"cash">>("cash", (d) => store.dispatch(cashSet(d)))
-  useNuiEvent<Data<"balance">>("balance", (d) => store.dispatch(balanceSet(d)))
+  useNuiEvent("open", onOpen, OPEN_MOCK);
+  useNuiEvent("close", () => store.dispatch(closed()));
+  useNuiEvent<Data<"cash">>("cash", (d) => store.dispatch(cashSet(d)));
+  useNuiEvent<Data<"balance">>("balance", (d) => store.dispatch(balanceSet(d)));
   useNuiEvent<Data<"history">>(
     "history",
     (d) => store.dispatch(historyPage(d)),
-    HISTORY_MOCK
-  )
+    HISTORY_MOCK,
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) =>
-      e.key === "Escape" && store.getState().bank.snapshot && close()
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
-  }, [])
+      e.key === "Escape" && store.getState().bank.snapshot && close();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
-  if (!snapshot) return null
-  const atm = snapshot.where === "atm"
+  if (!snapshot) return null;
+  const atm = snapshot.where === "atm";
   const kinds: ActionKind[] = atm
     ? ["withdraw", "transfer"]
-    : ["deposit", "withdraw", "transfer"]
-  const active = Math.max(0, kinds.indexOf(kind))
+    : ["deposit", "withdraw", "transfer"];
+  const active = Math.max(0, kinds.indexOf(kind));
 
   return (
     <div className="fixed inset-0 flex animate-fade items-center justify-center">
@@ -94,7 +94,7 @@ export function App() {
                   "relative flex h-[4vh] w-[12.4vh] items-center justify-center gap-[0.8vh] rounded-[0.8vh] text-[1.3vh] transition-[background-color,color,transform] duration-150 active:[transform:scale(0.96)]",
                   k === kind
                     ? "font-bold text-tgi-green-text"
-                    : "bg-control font-semibold text-text-3 hover:bg-control-hover hover:text-white"
+                    : "bg-control font-semibold text-text-3 hover:bg-control-hover hover:text-white",
                 )}
               >
                 <FontAwesomeIcon icon={KIND_ICON[k]} className="text-[1.4vh]" />
@@ -121,5 +121,5 @@ export function App() {
         </div>
       </section>
     </div>
-  )
+  );
 }

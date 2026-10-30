@@ -1,50 +1,50 @@
-import { useState } from "react"
-import { fetchNui } from "fivem-nui-react"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { useState } from "react";
+import { fetchNui } from "fivem-nui-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
   faArrowRightArrowLeft,
   faArrowUp,
   faDollarSign,
   faUser,
-} from "@fortawesome/free-solid-svg-icons"
-import type { ActionKind } from "../../../resource/common/bank"
-import { Button } from "../components/ui/button"
-import { Input } from "../components/ui/input"
-import { useLang } from "../lib/lang"
+} from "@fortawesome/free-solid-svg-icons";
+import type { ActionKind } from "../../../resource/common/bank";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { useLang } from "../lib/lang";
 
-const OK = { mockData: { ok: true } }
+const OK = { mockData: { ok: true } };
 export const KIND_ICON = {
   deposit: faArrowDown,
   withdraw: faArrowUp,
   transfer: faArrowRightArrowLeft,
-} as const
+} as const;
 
 /** Deposit / withdraw / transfer of the picked account: section title, pill inputs and the one green button. */
 export function ActionForm({
   account,
   kind,
 }: {
-  account: string
-  kind: ActionKind
+  account: string;
+  kind: ActionKind;
 }) {
-  const t = useLang()
-  const [amount, setAmount] = useState("")
-  const [target, setTarget] = useState("")
-  const [busy, setBusy] = useState(false)
-  const value = Math.floor(Number(amount))
+  const t = useLang();
+  const [amount, setAmount] = useState("");
+  const [target, setTarget] = useState("");
+  const [busy, setBusy] = useState(false);
+  const value = Math.floor(Number(amount));
   const valid =
     Number.isFinite(value) &&
     value > 0 &&
-    (kind !== "transfer" || target.trim() !== "")
-  const label = t(`UI_${kind.toUpperCase()}`)
+    (kind !== "transfer" || target.trim() !== "");
+  const label = t(`UI_${kind.toUpperCase()}`);
 
   const submit = async () => {
-    if (!valid) return
-    setBusy(true)
+    if (!valid) return;
+    setBusy(true);
     const targetId = /^\d+$/.test(target.trim())
       ? Number(target.trim())
-      : target.trim()
+      : target.trim();
     const result: unknown = await fetchNui(
       "action",
       {
@@ -53,17 +53,17 @@ export function ActionForm({
         amount: value,
         target: kind === "transfer" ? targetId : undefined,
       },
-      OK
-    ).catch(() => null)
-    setBusy(false)
+      OK,
+    ).catch(() => null);
+    setBusy(false);
     if (
       typeof result === "object" &&
       result !== null &&
       "ok" in result &&
       result.ok === true
     )
-      setAmount("")
-  }
+      setAmount("");
+  };
 
   return (
     <div className="flex shrink-0 flex-col gap-[1vh] rounded-[0.8vh] bg-header p-[1.2vh]">
@@ -76,8 +76,8 @@ export function ActionForm({
       <form
         className="flex gap-[0.6vh]"
         onSubmit={(e) => {
-          e.preventDefault()
-          void submit()
+          e.preventDefault();
+          void submit();
         }}
       >
         {kind === "transfer" && (
@@ -107,5 +107,5 @@ export function ActionForm({
         </Button>
       </form>
     </div>
-  )
+  );
 }

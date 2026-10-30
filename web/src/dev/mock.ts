@@ -1,8 +1,8 @@
-import en from "../../../locales/en.json"
+import en from "../../../locales/en.json";
 
 /** Browser preview only (`bun run webdev`): `?atm=1` opens an ATM. */
-const atm = new URLSearchParams(window.location.search).get("atm") !== null
-const now = Date.now()
+const atm = new URLSearchParams(window.location.search).get("atm") !== null;
+const now = Date.now();
 
 export const MOCK_OPEN = {
   texts: en,
@@ -15,7 +15,7 @@ export const MOCK_OPEN = {
       { key: "job:police", label: "LSPD", balance: 1250000 },
     ],
   },
-}
+};
 
 export const MOCK_HISTORY = {
   ok: true as const,
@@ -51,4 +51,4 @@ export const MOCK_HISTORY = {
       at: now - 90_000_000,
     },
   ],
-}
+};

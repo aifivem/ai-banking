@@ -7,8 +7,8 @@ import {
   optionalExport,
   Points,
   triggerServerCallback,
-} from "@aicore-fivem/lib/client"
-import { Locale } from "common"
+} from "@aicore-fivem/lib/client";
+import { Locale } from "common";
 import {
   EVENTS,
   readBanks,
@@ -17,34 +17,34 @@ import {
   type HistoryPage,
   type NuiMessage,
   type Where,
-} from "common/bank"
+} from "common/bank";
 
-const world = new AdminWorld(["banks", "settings"])
-const texts = loadLocaleTexts()
-const send = (m: NuiMessage): void => SendNUIMessage(m)
+const world = new AdminWorld(["banks", "settings"]);
+const texts = loadLocaleTexts();
+const send = (m: NuiMessage): void => SendNUIMessage(m);
 const isObj = (v: unknown): v is Record<string, unknown> =>
-  typeof v === "object" && v !== null
+  typeof v === "object" && v !== null;
 const errorText = (v: unknown, fallback: string): string => {
-  const key = isObj(v) && typeof v.error === "string" ? v.error : fallback
-  return texts[key] ?? key
-}
+  const key = isObj(v) && typeof v.error === "string" ? v.error : fallback;
+  return texts[key] ?? key;
+};
 
 /** The bank screen: opened at a branch point or an ATM (ai-target option); money changes arrive as deltas. */
 class Screen {
-  open = false
+  open = false;
 
   async show(where: Where): Promise<void> {
-    if (this.open) return
+    if (this.open) return;
     const raw: unknown = await triggerServerCallback(EVENTS.open, [
       where,
-    ]).catch(() => null)
+    ]).catch(() => null);
     if (
       !isObj(raw) ||
       raw.ok !== true ||
       !Array.isArray(raw.accounts) ||
       typeof raw.cash !== "number"
     )
-      return notify(errorText(raw, "BANK_ERR_FAR"), "error")
+      return notify(errorText(raw, "BANK_ERR_FAR"), "error");
     const snapshot: BankSnapshot = {
       ok: true,
       where,
@@ -55,29 +55,29 @@ class Screen {
         typeof a.label === "string" &&
         typeof a.balance === "number"
           ? [{ key: a.key, label: a.label, balance: a.balance }]
-          : []
+          : [],
       ),
-    }
-    this.open = true
-    SetNuiFocus(true, true)
-    send({ action: "open", data: { texts, snapshot } })
+    };
+    this.open = true;
+    SetNuiFocus(true, true);
+    send({ action: "open", data: { texts, snapshot } });
   }
 
   close(): void {
-    if (!this.open) return
-    this.open = false
-    SetNuiFocus(false, false)
-    send({ action: "close", data: null })
-    emitNet(EVENTS.close)
+    if (!this.open) return;
+    this.open = false;
+    SetNuiFocus(false, false);
+    send({ action: "close", data: null });
+    emitNet(EVENTS.close);
   }
 }
 
-const screen = new Screen()
+const screen = new Screen();
 
 /** Branch points (prompt or target, with blips); ATMs through ai-target's model options when it runs. */
-const points = new Points()
+const points = new Points();
 function rebuild(): void {
-  points.clear()
+  points.clear();
   for (const bank of readBanks(world.get("banks")).values()) {
     points.add(`bank:${bank.id}`, {
       coords: { x: bank.x, y: bank.y, z: bank.z },
@@ -88,10 +88,10 @@ function rebuild(): void {
         ? { sprite: 108, color: 2, scale: 0.7, label: bank.label }
         : undefined,
       onPressed: () => screen.show("bank"),
-    })
+    });
   }
-  const target = optionalExport("ai-target")
-  const models = readSettings(world.get("settings")).atmModels
+  const target = optionalExport("ai-target");
+  const models = readSettings(world.get("settings")).atmModels;
   if (target && models.length)
     target.addModel(models, [
       {
@@ -101,21 +101,21 @@ function rebuild(): void {
         distance: 1.5,
         onSelect: () => void screen.show("atm"),
       },
-    ])
+    ]);
 }
 
-rebuild()
-world.onChange("banks", rebuild)
+rebuild();
+world.onChange("banks", rebuild);
 
 onPlayerData("money", (money) => {
   if (screen.open && typeof money.cash === "number")
-    send({ action: "cash", data: money.cash })
+    send({ action: "cash", data: money.cash });
   if (screen.open && typeof money.bank === "number")
     send({
       action: "balance",
       data: { account: "personal", balance: money.bank },
-    })
-})
+    });
+});
 onServerEvent(
   EVENTS.balance,
   {
@@ -125,22 +125,22 @@ onServerEvent(
         : null,
   },
   (account, balance) => {
-    if (screen.open) send({ action: "balance", data: { account, balance } })
-  }
-)
+    if (screen.open) send({ action: "balance", data: { account, balance } });
+  },
+);
 
-type Reply = (r: unknown) => void
+type Reply = (r: unknown) => void;
 RegisterNuiCallback("close", (_d: unknown, cb: Reply) => {
-  screen.close()
-  cb({ ok: true })
-})
+  screen.close();
+  cb({ ok: true });
+});
 RegisterNuiCallback("history", (d: unknown, cb: Reply) => {
-  if (!isObj(d) || typeof d.account !== "string") return cb({ ok: false })
-  const before = typeof d.before === "number" ? d.before : null
+  if (!isObj(d) || typeof d.account !== "string") return cb({ ok: false });
+  const before = typeof d.before === "number" ? d.before : null;
   void triggerServerCallback(EVENTS.history, [d.account, before])
     .catch(() => null)
     .then((page) => {
-      cb({ ok: true })
+      cb({ ok: true });
       if (isObj(page) && page.ok === true && Array.isArray(page.rows)) {
         const rows = page.rows.flatMap((r) =>
           isObj(r) &&
@@ -158,18 +158,18 @@ RegisterNuiCallback("history", (d: unknown, cb: Reply) => {
                   at: r.at,
                 },
               ]
-            : []
-        )
+            : [],
+        );
         const history: HistoryPage = {
           ok: true,
           account: String(page.account),
           rows,
           more: page.more === true,
-        }
-        send({ action: "history", data: history })
+        };
+        send({ action: "history", data: history });
       }
-    })
-})
+    });
+});
 RegisterNuiCallback("action", (d: unknown, cb: Reply) => {
   if (
     !isObj(d) ||
@@ -177,7 +177,7 @@ RegisterNuiCallback("action", (d: unknown, cb: Reply) => {
     typeof d.kind !== "string" ||
     typeof d.amount !== "number"
   )
-    return cb({ ok: false })
+    return cb({ ok: false });
   void triggerServerCallback(EVENTS.action, [
     d.account,
     d.kind,
@@ -186,9 +186,9 @@ RegisterNuiCallback("action", (d: unknown, cb: Reply) => {
   ])
     .catch(() => null)
     .then((result) => {
-      const ok = isObj(result) && result.ok === true
-      if (!ok) notify(errorText(result, "BANK_ERR_MONEY"), "error")
-      else notify(Locale("BANK_DONE"), "success", 2000)
-      cb({ ok })
-    })
-})
+      const ok = isObj(result) && result.ok === true;
+      if (!ok) notify(errorText(result, "BANK_ERR_MONEY"), "error");
+      else notify(Locale("BANK_DONE"), "success", 2000);
+      cb({ ok });
+    });
+});

@@ -1,32 +1,32 @@
-import { useEffect } from "react"
-import { fetchNui } from "fivem-nui-react"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { useEffect } from "react";
+import { fetchNui } from "fivem-nui-react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown,
   faArrowUp,
   faClockRotateLeft,
-} from "@fortawesome/free-solid-svg-icons"
-import { VirtualList } from "../components/VirtualList"
-import { useLang } from "../lib/lang"
-import { cn } from "../lib/utils"
-import { historyLoading, store, useAppSelector } from "../store/bank"
+} from "@fortawesome/free-solid-svg-icons";
+import { VirtualList } from "../components/VirtualList";
+import { useLang } from "../lib/lang";
+import { cn } from "../lib/utils";
+import { historyLoading, store, useAppSelector } from "../store/bank";
 
-const OK = { mockData: { ok: true } }
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
+const OK = { mockData: { ok: true } };
+const money = (n: number) => `$${n.toLocaleString("en-US")}`;
 
 const loadHistory = (account: string, before: number | null) => {
-  store.dispatch(historyLoading(account))
-  void fetchNui("history", { account, before }, OK)
-}
+  store.dispatch(historyLoading(account));
+  void fetchNui("history", { account, before }, OK);
+};
 
 /** The account's transactions (tgiann-bank history rows): direction chip, reason and time, signed amount. */
 export function History({ account }: { account: string }) {
-  const t = useLang()
-  const history = useAppSelector((s) => s.bank.history[account])
+  const t = useLang();
+  const history = useAppSelector((s) => s.bank.history[account]);
   useEffect(() => {
-    if (!history) loadHistory(account, null)
-  }, [account, history])
-  const rows = history?.rows ?? []
+    if (!history) loadHistory(account, null);
+  }, [account, history]);
+  const rows = history?.rows ?? [];
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-[0.6vh] rounded-[0.8vh] bg-header p-[1.2vh] pb-0">
       <div className="flex h-[4vh] shrink-0 items-center gap-[1vh] border-b border-white/10">
@@ -53,7 +53,7 @@ export function History({ account }: { account: string }) {
           </div>
         }
         renderItem={(r, i) => {
-          const income = r.amount >= 0
+          const income = r.amount >= 0;
           return (
             <div className="flex h-[4.6vh] items-center gap-[1vh] rounded-[0.8vh] px-[0.6vh] transition-colors duration-150 hover:bg-white/3">
               <span
@@ -61,7 +61,7 @@ export function History({ account }: { account: string }) {
                   "flex size-[2.8vh] shrink-0 items-center justify-center rounded-full text-[1.2vh]",
                   income
                     ? "bg-tgi-green-10 text-tgi-green"
-                    : "bg-danger-bg text-danger"
+                    : "bg-danger-bg text-danger",
                 )}
               >
                 <FontAwesomeIcon icon={income ? faArrowDown : faArrowUp} />
@@ -77,7 +77,7 @@ export function History({ account }: { account: string }) {
               <span
                 className={cn(
                   "shrink-0 text-[1.4vh] font-semibold tabular-nums",
-                  income ? "text-tgi-green" : "text-danger"
+                  income ? "text-tgi-green" : "text-danger",
                 )}
               >
                 {income ? "+" : "-"}
@@ -87,15 +87,15 @@ export function History({ account }: { account: string }) {
                 <LoadMore account={account} before={r.id} />
               )}
             </div>
-          )
+          );
         }}
       />
     </div>
-  )
+  );
 }
 
 /** Asks for the next page once the last row is drawn. */
 function LoadMore({ account, before }: { account: string; before: number }) {
-  useEffect(() => loadHistory(account, before), [account, before])
-  return null
+  useEffect(() => loadHistory(account, before), [account, before]);
+  return null;
 }

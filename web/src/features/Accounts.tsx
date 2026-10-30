@@ -1,30 +1,30 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBriefcase,
   faChartPie,
   faUser,
   faWallet,
-} from "@fortawesome/free-solid-svg-icons"
-import type { BankSnapshot } from "../../../resource/common/bank"
-import { useLang } from "../lib/lang"
-import { cn } from "../lib/utils"
-import { selected, store, useAppSelector } from "../store/bank"
+} from "@fortawesome/free-solid-svg-icons";
+import type { BankSnapshot } from "../../../resource/common/bank";
+import { useLang } from "../lib/lang";
+import { cn } from "../lib/utils";
+import { selected, store, useAppSelector } from "../store/bank";
 
-const money = (n: number) => `$${n.toLocaleString("en-US")}`
-const iconOf = (key: string) => (key === "personal" ? faUser : faBriefcase)
+const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+const iconOf = (key: string) => (key === "personal" ? faUser : faBriefcase);
 
 /** Money in and out over the account's loaded transactions (the newest page): net figure, split bar, legend. */
 function Activity({ account }: { account: string }) {
-  const t = useLang()
-  const rows = useAppSelector((s) => s.bank.history[account]?.rows)
-  let income = 0
-  let spent = 0
+  const t = useLang();
+  const rows = useAppSelector((s) => s.bank.history[account]?.rows);
+  let income = 0;
+  let spent = 0;
   for (const r of rows ?? []) {
-    if (r.amount >= 0) income += r.amount
-    else spent -= r.amount
+    if (r.amount >= 0) income += r.amount;
+    else spent -= r.amount;
   }
-  const net = income - spent
-  const share = income + spent > 0 ? income / (income + spent) : 0.5
+  const net = income - spent;
+  const share = income + spent > 0 ? income / (income + spent) : 0.5;
   return (
     <div className="flex min-h-[8.6vh] flex-1 flex-col justify-between gap-[0.8vh] rounded-[1vh] bg-header p-[1.1vh]">
       <div className="flex items-center gap-[1vh]">
@@ -42,7 +42,11 @@ function Activity({ account }: { account: string }) {
         <span
           className={cn(
             "shrink-0 text-[1.8vh] font-bold tabular-nums",
-            net > 0 ? "text-tgi-green" : net < 0 ? "text-danger" : "text-text-2"
+            net > 0
+              ? "text-tgi-green"
+              : net < 0
+                ? "text-danger"
+                : "text-text-2",
           )}
         >
           {net > 0 ? "+" : net < 0 ? "-" : ""}
@@ -84,7 +88,7 @@ function Activity({ account }: { account: string }) {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /** Left column: the picked account as the green bank card, the other accounts to switch to, the player's cash. */
@@ -93,13 +97,13 @@ export function Accounts({
   account,
   atm,
 }: {
-  snapshot: BankSnapshot
-  account: string
-  atm: boolean
+  snapshot: BankSnapshot;
+  account: string;
+  atm: boolean;
 }) {
-  const t = useLang()
+  const t = useLang();
   const current =
-    snapshot.accounts.find((a) => a.key === account) ?? snapshot.accounts[0]
+    snapshot.accounts.find((a) => a.key === account) ?? snapshot.accounts[0];
   return (
     <aside className="flex min-h-0 flex-col gap-[1.2vh]">
       {current && (
@@ -137,7 +141,7 @@ export function Accounts({
           </span>
           <div className="flex min-h-0 flex-col gap-[0.5vh] overflow-y-auto">
             {snapshot.accounts.map((a) => {
-              const on = a.key === account
+              const on = a.key === account;
               return (
                 <button
                   key={a.key}
@@ -148,7 +152,7 @@ export function Accounts({
                     "flex h-[5vh] shrink-0 items-center gap-[1vh] rounded-[1vh] border px-[0.9vh] text-left transition-colors duration-150",
                     on
                       ? "border-tgi-green bg-tgi-green-10"
-                      : "border-white/8 bg-white/3 hover:bg-white/6"
+                      : "border-white/8 bg-white/3 hover:bg-white/6",
                   )}
                 >
                   <span
@@ -156,7 +160,7 @@ export function Accounts({
                       "flex size-[3.2vh] shrink-0 items-center justify-center rounded-full text-[1.3vh]",
                       on
                         ? "bg-tgi-green-15 text-tgi-green"
-                        : "bg-white/6 text-text-3"
+                        : "bg-white/6 text-text-3",
                     )}
                   >
                     <FontAwesomeIcon icon={iconOf(a.key)} />
@@ -168,7 +172,7 @@ export function Accounts({
                     {money(a.balance)}
                   </span>
                 </button>
-              )
+              );
             })}
           </div>
         </div>
@@ -186,5 +190,5 @@ export function Accounts({
         </span>
       </div>
     </aside>
-  )
+  );
 }
