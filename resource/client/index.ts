@@ -8,7 +8,12 @@ import {
   onServerEvent,
   Points,
 } from "@aicore-fivem/lib/client";
-import { isRecord, readFinite, readText } from "@aicore-fivem/lib/shared";
+import {
+  isRecord,
+  readFinite,
+  readText,
+  RecordObjects,
+} from "@aicore-fivem/lib/shared";
 import { Locale } from "common";
 import {
   EVENTS,
@@ -21,7 +26,6 @@ import {
 } from "common/bank";
 
 const world = new AdminWorld(["banks", "settings"]);
-const banks = world.records("banks", readBank);
 const settings = world.view("settings", readSettings);
 const texts = loadLocaleTexts();
 /** The page; closing it tells the server, which stops sending balance deltas. */
@@ -69,19 +73,9 @@ const screen = new Screen();
 
 /** Branch points (with blips) and the ATM models, as prompts or targets. */
 const points = new Points();
-function rebuild(): void {
-  points.clear();
-  for (const bank of banks.values()) {
-    points.add(`bank:${bank.id}`, {
-      ped: bank.ped ?? undefined,
-      coords: { x: bank.x, y: bank.y, z: bank.z },
-      label: Locale("BANK_PROMPT", bank.label),
-      icon: "building-columns",
-      radius: bank.radius,
-      blip: bank.blip ? { ...bank.blipStyle, label: bank.label } : undefined,
-      onPressed: () => screen.show("bank"),
-    });
-  }
+
+/** The ATM model point follows the settings' model list. */
+function addAtms(): void {
   const models = settings.value.atmModels;
   if (models.length)
     points.addModel("atm", {
@@ -91,11 +85,24 @@ function rebuild(): void {
       radius: 1.5,
       onPressed: (entity) => screen.show("atm", entity),
     });
+  else points.remove("atm");
 }
 
-rebuild();
-world.onChange("banks", rebuild);
-world.onChange("settings", rebuild);
+/** One point per branch; an edited branch rebuilds only its own point. */
+new RecordObjects(world, "banks", readBank, (id, bank) => {
+  points.add(`bank:${id}`, {
+    ped: bank.ped ?? undefined,
+    coords: { x: bank.x, y: bank.y, z: bank.z },
+    label: Locale("BANK_PROMPT", bank.label),
+    icon: "building-columns",
+    radius: bank.radius,
+    blip: bank.blip ? { ...bank.blipStyle, label: bank.label } : undefined,
+    onPressed: () => screen.show("bank"),
+  });
+  return () => points.remove(`bank:${id}`);
+});
+addAtms();
+world.onChange("settings", addAtms);
 
 onPlayerData("money", (money) => {
   if (screen.open && typeof money.cash === "number")

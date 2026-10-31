@@ -5,7 +5,7 @@ Banks (branches from the panel) and ATMs (world props, a lib `Points` model poin
 ## Decisions
 
 - No money of its own: deposit, withdraw and transfer are one lib `money.transfer` each (both accounts and both ledger rows in one transaction, the transfer fee paid by the sender), the society exports use ai-core's `*SharedMoney`; the history is read straight from ai-core's ledger table, read only, keyset paged (`server/history.ts`).
-- Society accounts: the `bank` account of each job where the player's grade has `boss` (grades from `server/definitions.ts`: each job definition read once from ai-core, dropped on `CORE.definitionsChangedEvent`; same file in ai-hud and ai-management until the lib has a definitions mirror).
+- Society accounts: the `bank` account of each job where the player's grade has `boss` (grades from lib `definitions.job`).
 - Transfers go to online players only (server id or citizen id), because ai-core keeps money in memory for online characters.
 - The screen gets one snapshot on open; personal balance and cash follow ai-core's player data deltas, a society balance goes as a delta to every open screen that shows that account (each boss of the job) after any change through ai-banking (screen actions and the society exports). ATMs only withdraw and transfer.
 - ATMs are map props the server cannot see: the client sends the ATM's position on open, the server refuses a player more than 3 m from it and checks the same point on every ATM action (a branch re-checks the branch). A modified client can still name a made-up point, so (owner decision) ATMs get their own panel limits instead of more trust in that point: `atmLimit` per withdrawal or transfer (default 5,000) and `atmDailyLimit` per character over 24 h (default 20,000, `server/atmAllowance.ts`: by character id in memory, a window opens with the first ATM action; a restart of ai-banking clears every count). Branches keep the strict branch check and have no limit.
@@ -19,5 +19,5 @@ Banks (branches from the panel) and ATMs (world props, a lib `Points` model poin
 ## Entry points
 
 - Server: open, history, actions, exports `resource/server/index.ts`; ledger reads `server/history.ts`.
-- Client: branch and ATM points, NUI bridge `resource/client/index.ts`.
+- Client: branch points (lib `RecordObjects`: an edited branch rebuilds only its point; the ATM model point follows `settings.atmModels`), NUI bridge `resource/client/index.ts`.
 - NUI (tgiann-bank look): shell and labelled header tabs `web/src/App.tsx`, card / accounts / activity (in and out of the loaded history page) / form / history in `web/src/features/`; preview `bun run webdev` (`?atm=1`).
