@@ -2,6 +2,7 @@ import {
   AdminPanel,
   aiLog,
   aiLogChannels,
+  definitions,
   isNear,
   money,
   notify,
@@ -9,9 +10,9 @@ import {
   onClientEvent,
   online,
   PlayerMap,
-  provideExport,
   registerExport,
   resourceExport,
+  provideExport,
 } from "@aicore-fivem/lib/server";
 import {
   fail,
@@ -35,6 +36,7 @@ import {
   type HistoryPage,
   type Where,
 } from "common/bank";
+import { AtmAllowance } from "./atmAllowance";
 import { loadHistory } from "./history";
 import { bankingSchema } from "./schema";
 
@@ -55,6 +57,7 @@ interface Session {
   jobs: string[];
 }
 const sessions = new PlayerMap<Session>();
+const atmAllowance = new AtmAllowance();
 
 function atBank(source: number): boolean {
   for (const bank of banks.values())
@@ -71,9 +74,7 @@ function inReach(source: number, session: Session): boolean {
 function bossJobs(source: number): string[] {
   return online.jobs(source).filter((job) => {
     const grade = online.jobGrade(source, job);
-    return (
-      grade !== null && core.GetJobDefinition(job)?.grades[grade]?.boss === true
-    );
+    return grade !== null && definitions.job(job)?.grades[grade]?.boss === true;
   });
 }
 
@@ -88,7 +89,7 @@ function accounts(source: number): AccountView[] {
   for (const job of bossJobs(source))
     list.push({
       key: `job:${job}`,
-      label: core.GetJobDefinition(job)?.label ?? job,
+      label: definitions.job(job)?.label ?? job,
       balance: core.GetSharedMoney("job", job, "bank") ?? 0,
     });
   return list;
@@ -203,12 +204,17 @@ onClientCallback(
     if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
     if (session.where === "atm" && (kind === "deposit" || job))
       return fail("BANK_ERR_ATM");
-    if (
-      session.where === "atm" &&
-      kind === "withdraw" &&
-      amount > settings.value.atmLimit
-    )
+    // ATM points come from the client: instead of trusting them more, ATM actions have their own panel limits.
+    const charId = online.character(source)?.id ?? null;
+    const atm = session.where === "atm";
+    if (atm && amount > settings.value.atmLimit)
       return fail("BANK_ERR_ATM_LIMIT");
+    if (
+      atm &&
+      (charId === null ||
+        amount > atmAllowance.left(charId, settings.value.atmDailyLimit))
+    )
+      return fail("BANK_ERR_ATM_DAILY");
 
     const cash: MoneyRef = { source, account: "cash" };
     const bank: MoneyRef = job
@@ -241,6 +247,7 @@ onClientCallback(
         metadata: { amount, fee, account },
       });
     }
+    if (atm && charId !== null) atmAllowance.spend(charId, amount);
     if (job) {
       pushBalance(job);
       aiLog("society", `${kind} $${amount} on ${job}`, {

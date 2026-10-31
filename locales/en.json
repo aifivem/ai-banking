@@ -7,7 +7,8 @@
   "BANK_ERR_FAR": "You are not at a bank",
   "BANK_ERR_DENIED": "You do not run this account",
   "BANK_ERR_ATM": "ATMs only pay out and transfer",
-  "BANK_ERR_ATM_LIMIT": "That is more than the ATM pays out at once",
+  "BANK_ERR_ATM_LIMIT": "That is more than an ATM moves at once",
+  "BANK_ERR_ATM_DAILY": "That goes over your daily ATM limit; a bank branch has no limit",
   "BANK_ERR_MONEY": "Not enough money",
   "BANK_ERR_TARGET": "Nobody with that id is in the city",
   "UI_BANK": "Bank",
@@ -50,8 +51,10 @@
   "ADMIN_F_ATM_MODELS": "ATM models",
   "ADMIN_H_ATM_MODELS": "World props that work as ATMs (needs ai-target).",
   "ADMIN_P_ATM_MODELS": "prop_atm_01",
-  "ADMIN_F_ATM_LIMIT": "ATM limit",
-  "ADMIN_H_ATM_LIMIT": "Most one ATM withdrawal pays out.",
+  "ADMIN_F_ATM_LIMIT": "ATM limit per action",
+  "ADMIN_H_ATM_LIMIT": "Most one ATM withdrawal or transfer moves. Bank branches have no limit.",
+  "ADMIN_F_ATM_DAILY": "ATM limit per day",
+  "ADMIN_H_ATM_DAILY": "Most one character withdraws and transfers through ATMs in 24 hours. Counted in memory: a restart of ai-banking starts every count again.",
   "ADMIN_F_FEE": "Transfer fee",
   "ADMIN_H_FEE": "Percent added to transfers to other players (0 = free)."
 }

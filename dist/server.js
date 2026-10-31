@@ -65,7 +65,7 @@ function readText(value, max) {
 const fail = (error) => ({
 	ok: !1,
 	error
-}), BLIP_STYLE_FIELDS = {
+}), isPublic = (rule) => rule.jobs.length === 0 && rule.gangs.length === 0, BLIP_STYLE_FIELDS = {
 	sprite: {
 		type: "number",
 		min: 0,
@@ -361,6 +361,7 @@ const CORE = {
 }, ADMIN = {
 	ace: "ai.admin",
 	openCallback: "ai-core:admin:open",
+	panelDataCallback: "ai-core:admin:panelData",
 	applyCallback: "ai-core:admin:apply",
 	closeEvent: "ai-core:admin:close",
 	showEvent: "ai-core:admin:show",
@@ -531,7 +532,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$16 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$17 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -545,7 +546,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$16.GetLookupValues(source);
+			list = core$17.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -810,7 +811,7 @@ function writeSchema(resource, name, text, log) {
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
 // ../../../packages/lib/src/server/admin/panel.ts
-const core$15 = resourceExport(CORE.resource);
+const core$16 = resourceExport(CORE.resource);
 var AdminPanel = class {
 	schema;
 	data = new Map();
@@ -826,10 +827,10 @@ var AdminPanel = class {
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
+		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelSummary", () => this.summary()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
 			count: 4,
 			windowMs: 1e4
-		} }), setImmediate(() => core$15.RegisterAdminPanel(this.resource));
+		} }), setImmediate(() => core$16.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -855,6 +856,27 @@ var AdminPanel = class {
 			schema: this.schema,
 			texts: loadLocaleTexts(),
 			data: clone(Object.fromEntries(this.data))
+		};
+	}
+	summary() {
+		let data = {}, index = {};
+		for (let [file, spec] of Object.entries(this.schema.files)) {
+			let content = this.data.get(file);
+			if (spec.kind !== "records") {
+				data[file] = clone(content ?? {});
+				continue;
+			}
+			let labels = {};
+			for (let [key, record] of Object.entries(content ?? {})) labels[key] = labelOf(record, spec.labelPath) ?? key;
+			index[file] = labels;
+		}
+		return {
+			resource: this.resource,
+			schema: this.schema,
+			texts: loadLocaleTexts(),
+			data,
+			loaded: !1,
+			index
 		};
 	}
 	apply(admin, raw) {
@@ -919,7 +941,7 @@ var AdminPanel = class {
 		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
 		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
 		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$15.AdminPanelChanged({
+		if (core$16.AdminPanelChanged({
 			resource: this.resource,
 			file,
 			key,
@@ -940,6 +962,15 @@ var AdminPanel = class {
 		this.data.set(name, data), (filled || raw === null || !file.hasSchemaRef()) && file.write(data);
 	}
 };
+function labelOf(record, path) {
+	if (!path) return null;
+	let at = record;
+	for (let part of path.split(".")) {
+		if (typeof at != "object" || !at) return null;
+		at = at[part];
+	}
+	return typeof at == "string" && at !== "" ? at : null;
+}
 // ../../../packages/lib/src/server/log.ts
 function aiLog(channel, message, options) {
 	optionalExport("ai-core")?.Log(channel, message, options);
@@ -958,7 +989,7 @@ function notify(source, text, kind = "info", duration) {
 }
 resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/online.ts
-const core$13 = resourceExport(CORE.resource);
+const core$14 = resourceExport(CORE.resource);
 function reindex(index, source, before, after) {
 	for (let name of before) {
 		let set = index.get(name);
@@ -986,11 +1017,11 @@ var OnlinePlayers = class {
 				gangs: [],
 				gangNames: [],
 				duty: null
-			}), this.setJobs(source, core$13.GetJobs(source) ?? []), this.setGangs(source, core$13.GetGangs(source) ?? []), this.setDuty(source, core$13.GetDutyJob(source));
+			}), this.setJobs(source, core$14.GetJobs(source) ?? []), this.setGangs(source, core$14.GetGangs(source) ?? []), this.setDuty(source, core$14.GetDutyJob(source));
 		};
 		on(CORE.playerLoadedEvent, load), on(CORE.playerUnloadedEvent, (source) => this.drop(source)), on(CORE.jobsChangedEvent, (source, jobs) => this.setJobs(source, jobs)), on(CORE.gangsChangedEvent, (source, gangs) => this.setGangs(source, gangs)), on(CORE.dutyChangedEvent, (source, job) => this.setDuty(source, job));
-		for (let source of core$13.GetLoadedSources()) {
-			let character = core$13.GetCharacter(source);
+		for (let source of core$14.GetLoadedSources()) {
+			let character = core$14.GetCharacter(source);
 			character && load(source, character);
 		}
 	}
@@ -1059,6 +1090,20 @@ var OnlinePlayers = class {
 		let duty = this.dutyJob(source);
 		return duty !== null && jobs.includes(duty);
 	}
+	allows(source, rule) {
+		if (isPublic(rule)) return !0;
+		let min = (name) => rule.grades[name] ?? 0;
+		for (let gang of rule.gangs) {
+			let grade = this.gangGrade(source, gang);
+			if (grade !== null && grade >= min(gang)) return !0;
+		}
+		let duty = rule.onDuty ? this.dutyJob(source) : null;
+		for (let job of rule.jobs) {
+			let grade = this.jobGrade(source, job);
+			if (grade !== null && grade >= min(job) && (!rule.onDuty || duty === job)) return !0;
+		}
+		return !1;
+	}
 	countOnDuty(jobs) {
 		this.start();
 		let count = 0;
@@ -1094,8 +1139,24 @@ on(CORE.playerUnloadedEvent, (source) => {
 	let settle = running.get(source);
 	settle && settle(!1);
 });
-// ../../../packages/lib/src/server/command.ts
-const resource$3 = GetCurrentResourceName();
+// ../../../packages/lib/src/server/definitions.ts
+const core$11 = resourceExport("ai-core"), definitions = new class {
+	jobs = new Map();
+	gangs = new Map();
+	constructor() {
+		on(CORE.definitionsChangedEvent, (file, name) => {
+			typeof name == "string" && (file === "jobs" ? this.jobs.delete(name) : file === "gangs" && this.gangs.delete(name));
+		});
+	}
+	job(name) {
+		let def = this.jobs.get(name);
+		return def === void 0 && this.jobs.set(name, def = core$11.GetJobDefinition(name) ?? null), def;
+	}
+	gang(name) {
+		let def = this.gangs.get(name);
+		return def === void 0 && this.gangs.set(name, def = core$11.GetGangDefinition(name) ?? null), def;
+	}
+}(), resource$3 = GetCurrentResourceName();
 createLogger(resource$3), new class {
 	list = [];
 	sent = new Map();
@@ -15482,6 +15543,7 @@ function readSettings(raw) {
 	return {
 		atmModels: Array.isArray(s.atmModels) ? s.atmModels.filter((m) => typeof m == "string") : [],
 		atmLimit: int(s.atmLimit, 5e3, 0, 1e7),
+		atmDailyLimit: int(s.atmDailyLimit, 2e4, 0, 1e8),
 		transferFee: num(s.transferFee, 0, 0, 50)
 	};
 }
@@ -15503,6 +15565,31 @@ function readBank(id, v) {
 		})
 	};
 }
+// resource/server/atmAllowance.ts
+const DAY_MS = 864e5;
+var AtmAllowance = class {
+	windows = new Map();
+	sweepAt = 64;
+	left(charId, daily) {
+		return Math.max(0, daily - this.current(charId));
+	}
+	spend(charId, amount) {
+		let window = this.windows.get(charId);
+		window && GetGameTimer() - window.start < DAY_MS ? window.total += amount : (this.windows.size >= this.sweepAt && this.sweep(), this.windows.set(charId, {
+			start: GetGameTimer(),
+			total: amount
+		}));
+	}
+	current(charId) {
+		let window = this.windows.get(charId);
+		return window ? GetGameTimer() - window.start < DAY_MS ? window.total : (this.windows.delete(charId), 0) : 0;
+	}
+	sweep() {
+		let now = GetGameTimer();
+		for (let [id, window] of this.windows) now - window.start >= DAY_MS && this.windows.delete(id);
+		this.sweepAt = Math.max(64, this.windows.size * 2);
+	}
+};
 async function loadHistory(ownerType, ownerId, account, beforeId) {
 	let found = await mysql.scalar("SELECT id FROM ai_core_accounts WHERE owner_type = ? AND owner_id = ? AND name = ?", [
 		ownerType,
@@ -15589,6 +15676,12 @@ const bankingSchema = {
 					type: "number",
 					min: 0,
 					max: 1e7,
+					integer: !0
+				},
+				atmDailyLimit: {
+					type: "number",
+					min: 0,
+					max: 1e8,
 					integer: !0
 				},
 				transferFee: {
@@ -15685,6 +15778,16 @@ const bankingSchema = {
 				},
 				{
 					widget: "number",
+					path: "atmDailyLimit",
+					label: "ADMIN_F_ATM_DAILY",
+					hint: "ADMIN_H_ATM_DAILY",
+					min: 0,
+					max: 1e8,
+					step: 1e3,
+					unit: "$"
+				},
+				{
+					widget: "number",
 					path: "transferFee",
 					label: "ADMIN_F_FEE",
 					hint: "ADMIN_H_FEE",
@@ -15701,7 +15804,7 @@ aiLogChannels({
 	transfers: {},
 	society: {}
 });
-const sessions = new PlayerMap();
+const sessions = new PlayerMap(), atmAllowance = new AtmAllowance();
 function atBank(source) {
 	for (let bank of banks.values()) if (isNear(source, bank, bank.radius + 2)) return !0;
 	return !1;
@@ -15712,7 +15815,7 @@ function inReach(source, session) {
 function bossJobs(source) {
 	return online.jobs(source).filter((job) => {
 		let grade = online.jobGrade(source, job);
-		return grade !== null && core.GetJobDefinition(job)?.grades[grade]?.boss === !0;
+		return grade !== null && definitions.job(job)?.grades[grade]?.boss === !0;
 	});
 }
 function accounts(source) {
@@ -15723,7 +15826,7 @@ function accounts(source) {
 	}];
 	for (let job of bossJobs(source)) list.push({
 		key: `job:${job}`,
-		label: core.GetJobDefinition(job)?.label ?? job,
+		label: definitions.job(job)?.label ?? job,
 		balance: core.GetSharedMoney("job", job, "bank") ?? 0
 	});
 	return list;
@@ -15803,7 +15906,9 @@ onClientCallback(EVENTS.action, {
 	let job = account.startsWith("job:") ? account.slice(4) : null;
 	if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
 	if (session.where === "atm" && (kind === "deposit" || job)) return fail("BANK_ERR_ATM");
-	if (session.where === "atm" && kind === "withdraw" && amount > settings.value.atmLimit) return fail("BANK_ERR_ATM_LIMIT");
+	let charId = online.character(source)?.id ?? null, atm = session.where === "atm";
+	if (atm && amount > settings.value.atmLimit) return fail("BANK_ERR_ATM_LIMIT");
+	if (atm && (charId === null || amount > atmAllowance.left(charId, settings.value.atmDailyLimit))) return fail("BANK_ERR_ATM_DAILY");
 	let cash = {
 		source,
 		account: "cash"
@@ -15837,7 +15942,7 @@ onClientCallback(EVENTS.action, {
 			}
 		});
 	}
-	return job && (pushBalance(job), aiLog("society", `${kind} $${amount} on ${job}`, {
+	return atm && charId !== null && atmAllowance.spend(charId, amount), job && (pushBalance(job), aiLog("society", `${kind} $${amount} on ${job}`, {
 		source,
 		metadata: {
 			job,

@@ -7,5 +7,6 @@
     "prop_fleeca_atm"
   ],
   "atmLimit": 5000,
+  "atmDailyLimit": 20000,
   "transferFee": 0
 }

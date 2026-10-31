@@ -19,10 +19,16 @@
       }
     },
     "atmLimit": {
-      "description": "ATM limit: Most one ATM withdrawal pays out.",
+      "description": "ATM limit per action: Most one ATM withdrawal or transfer moves. Bank branches have no limit.",
       "type": "integer",
       "minimum": 0,
       "maximum": 10000000
+    },
+    "atmDailyLimit": {
+      "description": "ATM limit per day: Most one character withdraws and transfers through ATMs in 24 hours. Counted in memory: a restart of ai-banking starts every count again.",
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100000000
     },
     "transferFee": {
       "description": "Transfer fee: Percent added to transfers to other players (0 = free).",
@@ -34,6 +40,7 @@
   "required": [
     "atmModels",
     "atmLimit",
+    "atmDailyLimit",
     "transferFee"
   ]
 }

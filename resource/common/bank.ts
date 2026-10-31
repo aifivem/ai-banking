@@ -29,8 +29,10 @@ export type ActionKind = "deposit" | "withdraw" | "transfer";
 
 export interface Settings {
   atmModels: string[];
-  /** Most an ATM pays out per withdrawal. */
+  /** Most one ATM action (withdrawal or transfer) moves. */
   atmLimit: number;
+  /** Most one character moves through ATMs in 24 h (memory: a restart of ai-banking clears it). */
+  atmDailyLimit: number;
   /** Percent taken from transfers to other players. */
   transferFee: number;
 }
@@ -87,6 +89,7 @@ export function readSettings(raw: unknown): Settings {
   return {
     atmModels: models,
     atmLimit: int(s.atmLimit, 5000, 0, 10_000_000),
+    atmDailyLimit: int(s.atmDailyLimit, 20_000, 0, 100_000_000),
     transferFee: num(s.transferFee, 0, 0, 50),
   };
 }
