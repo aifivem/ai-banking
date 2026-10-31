@@ -1,9 +1,9 @@
 import {
   AdminWorld,
   callAction,
-  hud,
   loadLocaleTexts,
   notify,
+  NuiScreen,
   onPlayerData,
   onServerEvent,
   Points,
@@ -24,15 +24,20 @@ const world = new AdminWorld(["banks", "settings"]);
 const banks = world.records("banks", readBank);
 const settings = world.view("settings", readSettings);
 const texts = loadLocaleTexts();
-const send = (m: NuiMessage): void => SendNUIMessage(m);
+/** The page; closing it tells the server, which stops sending balance deltas. */
+const page = new NuiScreen<NuiMessage>("bank", {
+  onClose: () => emitNet(EVENTS.close),
+});
 
 /** The bank screen: opened at a branch point or an ATM (ai-target option); money changes arrive as deltas. */
 class Screen {
-  open = false;
+  get open(): boolean {
+    return page.isOpen;
+  }
 
   /** `atm`: the ATM prop's position (the server keeps it and checks the player stays there). */
   async show(where: Where, atm: number | null = null): Promise<void> {
-    if (this.open) return;
+    if (page.isOpen) return;
     let point: { x: number; y: number; z: number } | null = null;
     if (atm !== null) {
       const [x = 0, y = 0, z = 0] = GetEntityCoords(atm, false);
@@ -56,19 +61,7 @@ class Screen {
           : [],
       ),
     };
-    this.open = true;
-    SetNuiFocus(true, true);
-    hud.hide("bank");
-    send({ action: "open", data: { texts, snapshot } });
-  }
-
-  close(): void {
-    if (!this.open) return;
-    this.open = false;
-    SetNuiFocus(false, false);
-    hud.show("bank");
-    send({ action: "close", data: null });
-    emitNet(EVENTS.close);
+    page.open({ action: "open", data: { texts, snapshot } });
   }
 }
 
@@ -106,9 +99,9 @@ world.onChange("settings", rebuild);
 
 onPlayerData("money", (money) => {
   if (screen.open && typeof money.cash === "number")
-    send({ action: "cash", data: money.cash });
+    page.send({ action: "cash", data: money.cash });
   if (screen.open && typeof money.bank === "number")
-    send({
+    page.send({
       action: "balance",
       data: { account: "personal", balance: money.bank },
     });
@@ -122,25 +115,25 @@ onServerEvent(
         : null,
   },
   (account, balance) => {
-    if (screen.open) send({ action: "balance", data: { account, balance } });
+    if (screen.open)
+      page.send({ action: "balance", data: { account, balance } });
   },
 );
 
-type Reply = (r: unknown) => void;
-RegisterNuiCallback("close", (_d: unknown, cb: Reply) => {
-  screen.close();
-  cb({ ok: true });
-});
-RegisterNuiCallback("history", (d: unknown, cb: Reply) => {
-  const account = isRecord(d) ? readText(d.account, 64) : null;
-  if (!isRecord(d) || account === null) return cb({ ok: false });
-  const before = typeof d.before === "number" ? d.before : null;
-  void callAction(EVENTS.history, [account, before], {
-    fallback: "BANK_ERR_FAR",
-  }).then((page) => {
-    cb({ ok: true });
-    if (page && Array.isArray(page.rows)) {
-      const rows = page.rows.flatMap((r) =>
+page.on(
+  "history",
+  (d) => {
+    const account = isRecord(d) ? readText(d.account, 64) : null;
+    return isRecord(d) && account !== null
+      ? { account, before: typeof d.before === "number" ? d.before : null }
+      : null;
+  },
+  async ({ account, before }) => {
+    const reply = await callAction(EVENTS.history, [account, before], {
+      fallback: "BANK_ERR_FAR",
+    });
+    if (reply && Array.isArray(reply.rows)) {
+      const rows = reply.rows.flatMap((r) =>
         isRecord(r) &&
         typeof r.id === "number" &&
         typeof r.amount === "number" &&
@@ -160,26 +153,30 @@ RegisterNuiCallback("history", (d: unknown, cb: Reply) => {
       );
       const history: HistoryPage = {
         ok: true,
-        account: String(page.account),
+        account: String(reply.account),
         rows,
-        more: page.more === true,
+        more: reply.more === true,
       };
-      send({ action: "history", data: history });
+      page.send({ action: "history", data: history });
     }
-  });
-});
-RegisterNuiCallback("action", (d: unknown, cb: Reply) => {
-  if (
-    !isRecord(d) ||
-    typeof d.account !== "string" ||
-    typeof d.kind !== "string" ||
-    typeof d.amount !== "number"
-  )
-    return cb({ ok: false });
-  void callAction(EVENTS.action, [d.account, d.kind, d.amount, d.target], {
-    fallback: "BANK_ERR_MONEY",
-  }).then((result) => {
+  },
+);
+page.on(
+  "action",
+  (d) =>
+    isRecord(d) &&
+    typeof d.account === "string" &&
+    typeof d.kind === "string" &&
+    typeof d.amount === "number"
+      ? { account: d.account, kind: d.kind, amount: d.amount, target: d.target }
+      : null,
+  async ({ account, kind, amount, target }) => {
+    const result = await callAction(
+      EVENTS.action,
+      [account, kind, amount, target],
+      { fallback: "BANK_ERR_MONEY" },
+    );
     if (result) notify(Locale("BANK_DONE"), "success", 2000);
-    cb({ ok: result !== null });
-  });
-});
+    return { ok: result !== null };
+  },
+);
