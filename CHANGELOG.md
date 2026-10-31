@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/aifivem/ai-banking/compare/v0.1.1...v0.1.2) (2026-10-31)
+
+
+### Miscellaneous Chores
+
+* rebuild with the current lib ([6c07973](https://github.com/aifivem/ai-banking/commit/6c079732db173ef41f7d7961de70b5b6360fb4c4))
+
 ## [0.1.1](https://github.com/aifivem/ai-banking/compare/v0.1.0...v0.1.1) (2026-10-31)
 
 
