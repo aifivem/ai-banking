@@ -15,13 +15,13 @@ import {
   provideExport,
 } from "@aicore-fivem/lib/server";
 import {
+  type ActionResult,
   fail,
-  isRecord,
   readFinite,
   readId,
   readInt,
   readText,
-  type ActionResult,
+  readVec3,
   type Vec3,
 } from "@aicore-fivem/lib/shared";
 import type { MoneyRef } from "@aicore-fivem/shared";
@@ -95,22 +95,11 @@ function accounts(source: number): AccountView[] {
   return list;
 }
 
-/** The ATM point a client names when it opens an ATM screen. */
-function readPoint(value: unknown): Vec3 | null {
-  if (!isRecord(value)) return null;
-  const [x, y, z] = [
-    readFinite(value.x),
-    readFinite(value.y),
-    readFinite(value.z),
-  ];
-  return x !== null && y !== null && z !== null ? { x, y, z } : null;
-}
-
 onClientCallback(
   EVENTS.open,
   {
     args: ([where, atm]) => {
-      const point = where === "atm" ? readPoint(atm) : null;
+      const point = where === "atm" ? readVec3(atm) : null;
       if (where !== "bank" && !point) return null;
       return [where as Where, point] as const;
     },
@@ -205,7 +194,7 @@ onClientCallback(
     if (session.where === "atm" && (kind === "deposit" || job))
       return fail("BANK_ERR_ATM");
     // ATM points come from the client: instead of trusting them more, ATM actions have their own panel limits.
-    const charId = online.character(source)?.id ?? null;
+    const charId = online.charId(source) ?? null;
     const atm = session.where === "atm";
     if (atm && amount > settings.value.atmLimit)
       return fail("BANK_ERR_ATM_LIMIT");

@@ -9,8 +9,9 @@ import type { BankSnapshot } from "../../../resource/common/bank";
 import { useLang } from "../lib/lang";
 import { cn } from "../lib/utils";
 import { selected, store, useAppSelector } from "../store/bank";
+import { groupDigits } from "@aicore-fivem/lib/shared";
 
-const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+const money = (n: number) => `$${groupDigits(n)}`;
 const iconOf = (key: string) => (key === "personal" ? faUser : faBriefcase);
 
 /** Money in and out over the account's loaded transactions (the newest page): net figure, split bar, legend. */

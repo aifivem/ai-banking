@@ -10,9 +10,10 @@ import { VirtualList } from "../components/VirtualList";
 import { useLang } from "../lib/lang";
 import { cn } from "../lib/utils";
 import { historyLoading, store, useAppSelector } from "../store/bank";
+import { groupDigits } from "@aicore-fivem/lib/shared";
 
 const OK = { mockData: { ok: true } };
-const money = (n: number) => `$${n.toLocaleString("en-US")}`;
+const money = (n: number) => `$${groupDigits(n)}`;
 
 const loadHistory = (account: string, before: number | null) => {
   store.dispatch(historyLoading(account));

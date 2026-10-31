@@ -61,6 +61,31 @@ function readText(value, max) {
 	let text = value.trim();
 	return text ? text.slice(0, max) : null;
 }
+function parts(value) {
+	if (Array.isArray(value)) return value;
+	if (typeof value != "object" || !value) return null;
+	let v = value;
+	return [
+		v.x,
+		v.y,
+		v.z,
+		v.heading ?? v.w
+	];
+}
+function readVec3(value) {
+	let p = parts(value);
+	if (!p) return null;
+	let [x, y, z] = [
+		readFinite(p[0]),
+		readFinite(p[1]),
+		readFinite(p[2])
+	];
+	return x !== null && y !== null && z !== null ? {
+		x,
+		y,
+		z
+	} : null;
+}
 // ../../../packages/lib/src/shared/action.ts
 const fail = (error) => ({
 	ok: !1,
@@ -351,6 +376,8 @@ const CORE = {
 	vehicleTypeCallback: "ai-core:vehicleType",
 	interactionStateKey: "ai:interaction",
 	pvpStateKey: "ai:pvp",
+	medicalStateKey: "ai:medical",
+	clientDeadEvent: "ai-core:client:dead",
 	charactersCallback: "ai-core:characters",
 	createCharacterCallback: "ai-core:createCharacter",
 	deleteCharacterCallback: "ai-core:deleteCharacter",
@@ -1064,6 +1091,9 @@ var OnlinePlayers = class {
 	}
 	character(source) {
 		return this.start(), this.players.get(source)?.character ?? null;
+	}
+	charId(source) {
+		return this.start(), this.players.get(source)?.character.id;
 	}
 	name(source, options = {}) {
 		let c = this.character(source);
@@ -15835,21 +15865,8 @@ function accounts(source) {
 	});
 	return list;
 }
-function readPoint(value) {
-	if (!isRecord(value)) return null;
-	let [x, y, z] = [
-		readFinite(value.x),
-		readFinite(value.y),
-		readFinite(value.z)
-	];
-	return x !== null && y !== null && z !== null ? {
-		x,
-		y,
-		z
-	} : null;
-}
 onClientCallback(EVENTS.open, { args: ([where, atm]) => {
-	let point = where === "atm" ? readPoint(atm) : null;
+	let point = where === "atm" ? readVec3(atm) : null;
 	return where !== "bank" && !point ? null : [where, point];
 } }, (source, where, atm) => {
 	if (where === "bank" ? !atBank(source) : !atm || !isNear(source, atm, 3)) return fail("BANK_ERR_FAR");
@@ -15910,7 +15927,7 @@ onClientCallback(EVENTS.action, {
 	let job = account.startsWith("job:") ? account.slice(4) : null;
 	if (job && !bossJobs(source).includes(job)) return fail("BANK_ERR_DENIED");
 	if (session.where === "atm" && (kind === "deposit" || job)) return fail("BANK_ERR_ATM");
-	let charId = online.character(source)?.id ?? null, atm = session.where === "atm";
+	let charId = online.charId(source) ?? null, atm = session.where === "atm";
 	if (atm && amount > settings.value.atmLimit) return fail("BANK_ERR_ATM_LIMIT");
 	if (atm && (charId === null || amount > atmAllowance.left(charId, settings.value.atmDailyLimit))) return fail("BANK_ERR_ATM_DAILY");
 	let cash = {
