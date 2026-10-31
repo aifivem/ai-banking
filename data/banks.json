@@ -3,71 +3,121 @@
   "legion_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
-      "x": 149.9,
-      "y": -1040.7,
+      "x": 149.05,
+      "y": -1041.3,
       "z": 29.37
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "pillbox_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
-      "x": 314.2,
-      "y": -279,
+      "x": 313.32,
+      "y": -280.03,
       "z": 54.17
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "burton_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
-      "x": -350.8,
-      "y": -49.6,
+      "x": -351.94,
+      "y": -50.72,
       "z": 49.04
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "rockford_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
-      "x": -1212.98,
-      "y": -330.84,
-      "z": 37.79
+      "x": -1212.68,
+      "y": -331.83,
+      "z": 37.78
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "great_ocean_fleeca": {
     "label": "Fleeca Bank",
     "coords": {
-      "x": -2962.6,
-      "y": 482.6,
+      "x": -2961.67,
+      "y": 482.31,
       "z": 15.7
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
+  },
+  "harmony_fleeca": {
+    "label": "Fleeca Bank",
+    "coords": {
+      "x": 1175.64,
+      "y": 2707.71,
+      "z": 38.09
+    },
+    "radius": 3,
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "pacific": {
     "label": "Pacific Standard",
     "coords": {
-      "x": 246.6,
-      "y": 223.6,
+      "x": 247.65,
+      "y": 223.87,
       "z": 106.29
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   },
   "paleto": {
     "label": "Blaine County Savings",
     "coords": {
-      "x": -112.2,
-      "y": 6469.3,
+      "x": -111.98,
+      "y": 6470.56,
       "z": 31.63
     },
     "radius": 3,
-    "blip": true
+    "blip": true,
+    "blipStyle": {
+      "sprite": 108,
+      "color": 2,
+      "scale": 0.55
+    }
   }
 }

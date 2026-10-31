@@ -7,7 +7,7 @@
   "author": {
     "name": "TGIANN"
   },
-  "repository": "github:TGIANN/ai-banking",
+  "repository": "github:aifivem/ai-banking",
   "type": "module",
   "fxDependencies": [
     "/onesync",
