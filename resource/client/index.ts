@@ -24,6 +24,10 @@ import {
   type NuiMessage,
   type Where,
 } from "common/bank";
+import { NUI_LAYER } from "@aicore-fivem/shared";
+
+// Stacking among NUI pages (`NUI_LAYER`): set at start, not left to load order.
+SetNuiZindex(NUI_LAYER.screen);
 
 const world = new AdminWorld(["banks", "settings"]);
 const settings = world.view("settings", readSettings);
