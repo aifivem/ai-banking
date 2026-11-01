@@ -513,7 +513,7 @@ var ClientGate = class {
 	}
 };
 // ../../../packages/lib/src/server/callback.ts
-const log$4 = createLogger(GetCurrentResourceName()), resource$4 = GetCurrentResourceName(), REFUSED = Symbol("refused");
+const log$4 = createLogger(GetCurrentResourceName()), resource$5 = GetCurrentResourceName(), REFUSED = Symbol("refused");
 function onClientCallback(name, first, second) {
 	let [handler, options] = typeof first == "function" ? [first, second ?? {}] : [second, first], gate = new ClientGate(name, options, 20);
 	onNet(requestEvent(name), async (caller, id, ...raw) => {
@@ -530,7 +530,7 @@ function onClientCallback(name, first, second) {
 	});
 }
 const pending$1 = new Map();
-onNet(responseEvent(resource$4), (id, ok, result) => {
+onNet(responseEvent(resource$5), (id, ok, result) => {
 	let entry = typeof id == "number" ? pending$1.get(id) : void 0;
 	entry && entry.source === Number(globalThis.source) && (pending$1.delete(id), clearTimeout(entry.timer), ok === !0 ? entry.resolve(result) : entry.reject(Error("client callback failed")));
 });
@@ -576,7 +576,7 @@ function toPatch(value) {
 		default: return null;
 	}
 }
-const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$26 = resourceExport(CORE.resource), ERR = {
+const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(value)), core$27 = resourceExport(CORE.resource), ERR = {
 	type: "ADMIN_ERR_TYPE",
 	range: "ADMIN_ERR_RANGE",
 	length: "ADMIN_ERR_LENGTH",
@@ -590,7 +590,7 @@ const clone = (value) => value === void 0 ? value : JSON.parse(JSON.stringify(va
 		if (cached && Date.now() - cached.at < 2e3) return cached.values.size > 0 ? cached.values : null;
 		let list = [];
 		try {
-			list = core$26.GetLookupValues(source);
+			list = core$27.GetLookupValues(source);
 		} catch {}
 		let values = new Set(Array.isArray(list) ? list.filter((v) => typeof v == "string") : []);
 		return this.lists.set(source, {
@@ -719,11 +719,7 @@ function applyEdit(data, patch, spec) {
 	}
 	return [spec.kind === "records" ? patch.key : void 0];
 }
-// ../../../packages/lib/src/server/admin/jsonSchema.ts
-const SCHEMA_KEY = {
-	type: "string",
-	description: "This file's JSON Schema (for editors)."
-};
+// ../../../packages/lib/src/server/admin/descriptions.ts
 function langFile(resource) {
 	try {
 		let raw = JSON.parse(LoadResourceFile(resource, "locales/en.json") ?? "{}");
@@ -750,6 +746,11 @@ function describe(schema, file, lang) {
 	for (let tab of schema.tabs) if (tab.file === file) for (let card of tab.cards) collect(card.fields, "", lang, out);
 	return out;
 }
+// ../../../packages/lib/src/server/admin/jsonSchema.ts
+const SCHEMA_KEY = {
+	type: "string",
+	description: "This file's JSON Schema (for editors)."
+};
 function toJson(spec, path, desc) {
 	let description = desc.get(path), base = description ? { description } : {};
 	switch (spec.type) {
@@ -854,27 +855,20 @@ function writeSchema(resource, name, text, log) {
 	let dir = `${GetResourcePath(resource)}/data/schemas`;
 	(0, node_fs_promises.mkdir)(dir, { recursive: !0 }).then(() => (0, node_fs_promises.writeFile)(`${dir}/${name}.schema.json`, text, "utf8")).catch((error) => log.error(`writing ${resource}/${path} failed`, error));
 }
-// ../../../packages/lib/src/server/admin/panel.ts
-const core$25 = resourceExport(CORE.resource);
-var AdminPanel = class {
+// ../../../packages/lib/src/server/admin/panelFiles.ts
+const core$26 = resourceExport(CORE.resource);
+var PanelFiles = class {
 	schema;
 	data = new Map();
 	dataFiles = new Map();
 	handlers = new Map();
-	rules = new Map();
-	actions = new Map();
 	views = new FileViews((file) => this.get(file));
 	worldChanges = new Map();
 	resource = GetCurrentResourceName();
 	log = createLogger(this.resource);
-	editor = 0;
 	constructor(schema) {
 		this.schema = schema;
 		for (let [name, spec] of Object.entries(schema.files)) this.load(name, spec);
-		registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelData", () => this.dataSnapshot()), registerExport("AdminPanelSummary", () => this.summary()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
-			count: 4,
-			windowMs: 1e4
-		} }), setImmediate(() => core$25.RegisterAdminPanel(this.resource));
 	}
 	get(file) {
 		return this.data.get(file) ?? {};
@@ -882,17 +876,68 @@ var AdminPanel = class {
 	onChange(file, handler) {
 		this.handlers.set(file, [...this.handlers.get(file) ?? [], handler]);
 	}
-	rule(file, rule) {
-		this.rules.set(file, rule);
-	}
-	onAction(id, handler) {
-		this.actions.set(id, handler);
-	}
 	view(file, read) {
 		return this.views.view(file, read);
 	}
 	records(file, readOne) {
 		return this.views.records(file, readOne);
+	}
+	commit(file, key, value) {
+		let data = this.data.get(file);
+		data && (key === void 0 ? isRecord(value) && this.data.set(file, clone(value)) : value === null ? delete data[key] : data[key] = clone(value), this.changed(file, key));
+	}
+	commitAfter(file, key, value) {
+		setImmediate(() => this.commit(file, key, value));
+	}
+	store(patch, spec) {
+		let data = this.data.get(patch.file) ?? {}, keys = applyEdit(data, patch, spec);
+		if (keys.length !== 0) {
+			this.data.set(patch.file, data);
+			for (let key of keys) this.changed(patch.file, key);
+		}
+	}
+	changed(file, key) {
+		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
+		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
+		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
+		if (core$26.AdminPanelChanged({
+			resource: this.resource,
+			file,
+			key,
+			value: clone(value)
+		}), spec?.sync !== "all") return;
+		let changes = this.worldChanges.get(file) ?? {};
+		changes[key ?? ""] = clone(value), this.worldChanges.set(file, changes), emitNet(ADMIN.worldEvent(this.resource), -1, file, key ?? null, value);
+	}
+	load(name, spec) {
+		if (spec.memory) {
+			this.data.set(name, {});
+			return;
+		}
+		let file = new DataFile(this.resource, name, this.log);
+		this.dataFiles.set(name, file), file.schemaRef = `./schemas/${name}.schema.json`, writeSchema(this.resource, name, fileSchema(this.resource, this.schema, name, spec), this.log);
+		let raw = file.read(), data = isRecord(raw) ? raw : {}, filled = !1;
+		if (spec.kind === "settings") for (let [section, value] of Object.entries(spec.defaults ?? {})) section in data || (data[section] = clone(value), filled = !0);
+		this.data.set(name, data), (filled || raw === null || !file.hasSchemaRef()) && file.write(data);
+	}
+};
+// ../../../packages/lib/src/server/admin/panel.ts
+const core$25 = resourceExport(CORE.resource);
+var AdminPanel = class extends PanelFiles {
+	rules = new Map();
+	actions = new Map();
+	editor = 0;
+	constructor(schema) {
+		super(schema), registerExport("AdminPanelSnapshot", () => this.snapshot()), registerExport("AdminPanelData", () => this.dataSnapshot()), registerExport("AdminPanelSummary", () => this.summary()), registerExport("AdminPanelApply", (admin, patch) => this.apply(admin, patch)), onClientCallback(ADMIN.worldChangesCallback(this.resource), () => Object.fromEntries(this.worldChanges), { rate: {
+			count: 4,
+			windowMs: 1e4
+		} }), setImmediate(() => core$25.RegisterAdminPanel(this.resource));
+	}
+	rule(file, rule) {
+		this.rules.set(file, rule);
+	}
+	onAction(id, handler) {
+		this.actions.set(id, handler);
 	}
 	snapshot() {
 		return {
@@ -970,44 +1015,6 @@ var AdminPanel = class {
 			};
 		}
 	}
-	commit(file, key, value) {
-		let data = this.data.get(file);
-		data && (key === void 0 ? isRecord(value) && this.data.set(file, clone(value)) : value === null ? delete data[key] : data[key] = clone(value), this.changed(file, key));
-	}
-	commitAfter(file, key, value) {
-		setImmediate(() => this.commit(file, key, value));
-	}
-	store(patch, spec) {
-		let data = this.data.get(patch.file) ?? {}, keys = applyEdit(data, patch, spec);
-		if (keys.length !== 0) {
-			this.data.set(patch.file, data);
-			for (let key of keys) this.changed(patch.file, key);
-		}
-	}
-	changed(file, key) {
-		let spec = this.schema.files[file], data = this.get(file), value = key === void 0 ? data : data[key] ?? null;
-		this.dataFiles.get(file)?.write(data), this.views.changed(file, key, value);
-		for (let handler of this.handlers.get(file) ?? []) handler(key, value);
-		if (core$25.AdminPanelChanged({
-			resource: this.resource,
-			file,
-			key,
-			value: clone(value)
-		}), spec?.sync !== "all") return;
-		let changes = this.worldChanges.get(file) ?? {};
-		changes[key ?? ""] = clone(value), this.worldChanges.set(file, changes), emitNet(ADMIN.worldEvent(this.resource), -1, file, key ?? null, value);
-	}
-	load(name, spec) {
-		if (spec.memory) {
-			this.data.set(name, {});
-			return;
-		}
-		let file = new DataFile(this.resource, name, this.log);
-		this.dataFiles.set(name, file), file.schemaRef = `./schemas/${name}.schema.json`, writeSchema(this.resource, name, fileSchema(this.resource, this.schema, name, spec), this.log);
-		let raw = file.read(), data = isRecord(raw) ? raw : {}, filled = !1;
-		if (spec.kind === "settings") for (let [section, value] of Object.entries(spec.defaults ?? {})) section in data || (data[section] = clone(value), filled = !0);
-		this.data.set(name, data), (filled || raw === null || !file.hasSchemaRef()) && file.write(data);
-	}
 };
 function labelOf(record, path) {
 	if (!path) return null;
@@ -1036,7 +1043,7 @@ function notify(source, text, kind = "info", duration, title) {
 	emitNet(LIB_UI.notifyEvent, source, notification);
 }
 resourceExport(CORE.resource);
-// ../../../packages/lib/src/server/online.ts
+// ../../../packages/lib/src/server/online/mirror.ts
 const core$23 = resourceExport(CORE.resource);
 function reindex(index, source, before, after) {
 	for (let name of before) {
@@ -1048,7 +1055,7 @@ function reindex(index, source, before, after) {
 		set || index.set(name, set = new Set()), set.add(source);
 	}
 }
-var OnlinePlayers = class {
+var OnlineMirror = class {
 	players = new Map();
 	onDuty = new Map();
 	jobIndex = new Map();
@@ -1100,6 +1107,7 @@ var OnlinePlayers = class {
 		let set = this.onDuty.get(job);
 		set || this.onDuty.set(job, set = new Set()), set.add(source);
 	}
+}, OnlinePlayers = class extends OnlineMirror {
 	sources() {
 		return this.start(), this.players.keys();
 	}
@@ -1219,8 +1227,11 @@ const core$19 = resourceExport("ai-core"), definitions = new class {
 		let def = this.gangs.get(name);
 		return def === void 0 && this.gangs.set(name, def = core$19.GetGangDefinition(name) ?? null), def;
 	}
-}(), resource$3 = GetCurrentResourceName();
-createLogger(resource$3), new class {
+}();
+createLogger(GetCurrentResourceName());
+// ../../../packages/lib/src/server/command/commandSet.ts
+const resource$3 = GetCurrentResourceName();
+new class {
 	list = [];
 	sent = new Map();
 	announced = 0;
@@ -15500,7 +15511,7 @@ const mysql = {
 	close: closePool
 };
 createLogger("aicore-lib");
-// ../../../packages/lib/src/fivem/scheduler.ts
+// ../../../packages/lib/src/fivem/scheduler/group.ts
 var Group = class {
 	interval;
 	jobs = Array(8);
@@ -15586,13 +15597,10 @@ new class {
 		}
 		groups.length = kept, this.nextDue = soonest;
 	};
-}(), IsDuplicityVersion(), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
+}(), IsDuplicityVersion(), IsDuplicityVersion(), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
 // ../../../packages/lib/src/server/money.ts
 const core$14 = resourceExport(CORE.resource), money = { transfer: (from, to, amount, reason, fee) => core$14.TransferMoney(from, to, amount, reason, fee) };
 resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource), resourceExport(CORE.resource);
-// resource/common/locale.ts
-const Locale = createLocale();
-GetCurrentResourceName(), IsDuplicityVersion();
 // resource/common/bank.ts
 const EVENTS = {
 	open: "ai-banking:open",
@@ -15628,60 +15636,8 @@ function readBank(id, v) {
 		})
 	};
 }
-// resource/server/atmAllowance.ts
-const DAY_MS = 864e5;
-var AtmAllowance = class {
-	windows = new Map();
-	sweepAt = 64;
-	left(charId, daily) {
-		return Math.max(0, daily - this.current(charId));
-	}
-	spend(charId, amount) {
-		let window = this.windows.get(charId);
-		window && GetGameTimer() - window.start < DAY_MS ? window.total += amount : (this.windows.size >= this.sweepAt && this.sweep(), this.windows.set(charId, {
-			start: GetGameTimer(),
-			total: amount
-		}));
-	}
-	current(charId) {
-		let window = this.windows.get(charId);
-		return window ? GetGameTimer() - window.start < DAY_MS ? window.total : (this.windows.delete(charId), 0) : 0;
-	}
-	sweep() {
-		let now = GetGameTimer();
-		for (let [id, window] of this.windows) now - window.start >= DAY_MS && this.windows.delete(id);
-		this.sweepAt = Math.max(64, this.windows.size * 2);
-	}
-};
-async function loadHistory(ownerType, ownerId, account, beforeId) {
-	let found = await mysql.scalar("SELECT id FROM ai_core_accounts WHERE owner_type = ? AND owner_id = ? AND name = ?", [
-		ownerType,
-		ownerId,
-		account
-	]);
-	if (!found) return {
-		rows: [],
-		more: !1
-	};
-	let rows = await mysql.query(`SELECT id, amount, balance_after, reason, created_at FROM ai_core_transactions
-     WHERE account_id = ? ${beforeId ? "AND id < ?" : ""} ORDER BY created_at DESC, id DESC LIMIT ?`, beforeId ? [
-		found,
-		beforeId,
-		31
-	] : [found, 31]);
-	return {
-		rows: rows.slice(0, 30).map((r) => ({
-			id: Number(r.id),
-			amount: Number(r.amount),
-			balance: Number(r.balance_after),
-			reason: r.reason,
-			at: Number(r.created_at)
-		})),
-		more: rows.length > 30
-	};
-}
-// resource/server/schema.ts
-const bankingSchema = {
+// resource/server/panel.ts
+const panel = new AdminPanel({
 	title: "ADMIN_TITLE",
 	icon: "building-columns",
 	files: {
@@ -15862,19 +15818,16 @@ const bankingSchema = {
 			]
 		}]
 	}]
-}, core = resourceExport("ai-core"), panel = new AdminPanel(bankingSchema), settings = panel.view("settings", readSettings), banks = panel.records("banks", readBank);
+}), settings = panel.view("settings", readSettings), banks = panel.records("banks", readBank);
+// resource/server/logs.ts
 aiLogChannels({
 	transfers: {},
 	society: {}
 });
-const sessions = new PlayerMap(), atmAllowance = new AtmAllowance();
-function atBank(source) {
-	for (let bank of banks.values()) if (isNear(source, bank, bank.radius + 2)) return !0;
-	return !1;
-}
-function inReach(source, session) {
-	return session.atm ? isNear(source, session.atm, 3) : atBank(source);
-}
+// resource/server/core.ts
+const core = resourceExport("ai-core"), Locale = createLocale();
+GetCurrentResourceName(), IsDuplicityVersion();
+// resource/server/screen/accounts.ts
 function bossJobs(source) {
 	return online.jobs(source).filter((job) => {
 		let grade = online.jobGrade(source, job);
@@ -15894,63 +15847,52 @@ function accounts(source) {
 	});
 	return list;
 }
-onClientCallback(EVENTS.open, { args: ([where, atm]) => {
-	let point = where === "atm" ? readVec3(atm) : null;
-	return where !== "bank" && !point ? null : [where, point];
-} }, (source, where, atm) => {
-	if (where === "bank" ? !atBank(source) : !atm || !isNear(source, atm, 3)) return fail("BANK_ERR_FAR");
-	let list = accounts(source);
-	return sessions.set(source, {
-		where,
-		atm,
-		jobs: list.flatMap((a) => a.key.startsWith("job:") ? [a.key.slice(4)] : [])
-	}), {
-		ok: !0,
-		where,
-		cash: core.GetMoney(source, "cash") ?? 0,
-		accounts: list
-	};
-}), onClientCallback(EVENTS.history, {
-	args: ([account, before]) => {
-		let name = readText(account, 64), id = before === null ? null : readId(before);
-		return name !== null && (before === null || id !== null) ? [name, id] : null;
-	},
-	rate: {
-		count: 4,
-		windowMs: 2e3
+// resource/server/screen/atmAllowance.ts
+const DAY_MS = 864e5;
+var AtmAllowance = class {
+	windows = new Map();
+	sweepAt = 64;
+	left(charId, daily) {
+		return Math.max(0, daily - this.current(charId));
 	}
-}, async (source, account, before) => {
-	let character = online.character(source);
-	if (!character || !sessions.has(source)) return fail("BANK_ERR_FAR");
-	let job = account.startsWith("job:") ? account.slice(4) : null;
-	return job && !bossJobs(source).includes(job) ? fail("BANK_ERR_DENIED") : {
-		ok: !0,
-		account,
-		...job ? await loadHistory("job", job, "bank", before) : await loadHistory("character", String(character.id), "bank", before)
-	};
-});
+	spend(charId, amount) {
+		let window = this.windows.get(charId);
+		window && GetGameTimer() - window.start < DAY_MS ? window.total += amount : (this.windows.size >= this.sweepAt && this.sweep(), this.windows.set(charId, {
+			start: GetGameTimer(),
+			total: amount
+		}));
+	}
+	current(charId) {
+		let window = this.windows.get(charId);
+		return window ? GetGameTimer() - window.start < DAY_MS ? window.total : (this.windows.delete(charId), 0) : 0;
+	}
+	sweep() {
+		let now = GetGameTimer();
+		for (let [id, window] of this.windows) now - window.start >= DAY_MS && this.windows.delete(id);
+		this.sweepAt = Math.max(64, this.windows.size * 2);
+	}
+};
+const sessions = new PlayerMap();
+function atBank(source) {
+	for (let bank of banks.values()) if (isNear(source, bank, bank.radius + 2)) return !0;
+	return !1;
+}
+function inReach(source, session) {
+	return session.atm ? isNear(source, session.atm, 3) : atBank(source);
+}
+function pushBalance(job) {
+	let balance = core.GetSharedMoney("job", job, "bank") ?? 0;
+	for (let [viewer, session] of sessions) session.jobs.includes(job) && emitNet(EVENTS.balance, viewer, `job:${job}`, balance);
+}
+// resource/server/screen/action.ts
+const atmAllowance = new AtmAllowance();
 function targetOf(target) {
 	let id = readId(target);
 	if (id !== null) return online.character(id) ? id : null;
 	let citizen = readText(target, 32);
 	return citizen === null ? null : core.GetSourceByCitizenId(citizen.toUpperCase()) ?? core.GetSourceByCitizenId(citizen);
 }
-function pushBalance(job) {
-	let balance = core.GetSharedMoney("job", job, "bank") ?? 0;
-	for (let [viewer, session] of sessions) session.jobs.includes(job) && emitNet(EVENTS.balance, viewer, `job:${job}`, balance);
-}
-onClientCallback(EVENTS.action, {
-	args: ([account, kind, amount, target]) => {
-		let name = readText(account, 64), value = readInt(amount, 1, 1e8);
-		return name !== null && value !== null && (kind === "deposit" || kind === "withdraw" || kind === "transfer") ? [
-			name,
-			kind,
-			value,
-			target
-		] : null;
-	},
-	lock: !0
-}, (source, account, kind, amount, target) => {
+function runAction(source, account, kind, amount, target) {
 	let session = sessions.get(source);
 	if (!session || !inReach(source, session)) return fail("BANK_ERR_FAR");
 	let job = account.startsWith("job:") ? account.slice(4) : null;
@@ -16000,7 +15942,81 @@ onClientCallback(EVENTS.action, {
 			amount
 		}
 	})), { ok: !0 };
-}), onClientEvent(EVENTS.close, (source) => void sessions.delete(source));
+}
+async function loadHistory(ownerType, ownerId, account, beforeId) {
+	let found = await mysql.scalar("SELECT id FROM ai_core_accounts WHERE owner_type = ? AND owner_id = ? AND name = ?", [
+		ownerType,
+		ownerId,
+		account
+	]);
+	if (!found) return {
+		rows: [],
+		more: !1
+	};
+	let rows = await mysql.query(`SELECT id, amount, balance_after, reason, created_at FROM ai_core_transactions
+     WHERE account_id = ? ${beforeId ? "AND id < ?" : ""} ORDER BY created_at DESC, id DESC LIMIT ?`, beforeId ? [
+		found,
+		beforeId,
+		31
+	] : [found, 31]);
+	return {
+		rows: rows.slice(0, 30).map((r) => ({
+			id: Number(r.id),
+			amount: Number(r.amount),
+			balance: Number(r.balance_after),
+			reason: r.reason,
+			at: Number(r.created_at)
+		})),
+		more: rows.length > 30
+	};
+}
+onClientCallback(EVENTS.open, { args: ([where, atm]) => {
+	let point = where === "atm" ? readVec3(atm) : null;
+	return where !== "bank" && !point ? null : [where, point];
+} }, (source, where, atm) => {
+	if (where === "bank" ? !atBank(source) : !atm || !isNear(source, atm, 3)) return fail("BANK_ERR_FAR");
+	let list = accounts(source);
+	return sessions.set(source, {
+		where,
+		atm,
+		jobs: list.flatMap((a) => a.key.startsWith("job:") ? [a.key.slice(4)] : [])
+	}), {
+		ok: !0,
+		where,
+		cash: core.GetMoney(source, "cash") ?? 0,
+		accounts: list
+	};
+}), onClientCallback(EVENTS.history, {
+	args: ([account, before]) => {
+		let name = readText(account, 64), id = before === null ? null : readId(before);
+		return name !== null && (before === null || id !== null) ? [name, id] : null;
+	},
+	rate: {
+		count: 4,
+		windowMs: 2e3
+	}
+}, async (source, account, before) => {
+	let character = online.character(source);
+	if (!character || !sessions.has(source)) return fail("BANK_ERR_FAR");
+	let job = account.startsWith("job:") ? account.slice(4) : null;
+	return job && !bossJobs(source).includes(job) ? fail("BANK_ERR_DENIED") : {
+		ok: !0,
+		account,
+		...job ? await loadHistory("job", job, "bank", before) : await loadHistory("character", String(character.id), "bank", before)
+	};
+}), onClientCallback(EVENTS.action, {
+	args: ([account, kind, amount, target]) => {
+		let name = readText(account, 64), value = readInt(amount, 1, 1e8);
+		return name !== null && value !== null && (kind === "deposit" || kind === "withdraw" || kind === "transfer") ? [
+			name,
+			kind,
+			value,
+			target
+		] : null;
+	},
+	lock: !0
+}, (source, account, kind, amount, target) => runAction(source, account, kind, amount, target)), onClientEvent(EVENTS.close, (source) => void sessions.delete(source));
+// resource/server/society.ts
 function changed(job, ok) {
 	return ok && pushBalance(job), ok;
 }

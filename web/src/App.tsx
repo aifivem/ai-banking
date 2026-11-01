@@ -17,9 +17,9 @@ import {
   store,
   useAppSelector,
 } from "./store/bank";
-import { Accounts } from "./features/Accounts";
-import { ActionForm, KIND_ICON } from "./features/ActionForm";
-import { History } from "./features/History";
+import { Accounts } from "./features/bank/Accounts";
+import { ActionForm, KIND_ICON } from "./features/bank/ActionForm";
+import { History } from "./features/bank/History";
 
 type Data<A extends NuiMessage["action"]> = Extract<
   NuiMessage,

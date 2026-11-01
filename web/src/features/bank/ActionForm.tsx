@@ -8,10 +8,10 @@ import {
   faDollarSign,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
-import type { ActionKind } from "../../../resource/common/bank";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { useLang } from "../lib/lang";
+import type { ActionKind } from "../../../../resource/common/bank";
+import { Button } from "../../components/ui/button";
+import { Input } from "../../components/ui/input";
+import { useLang } from "../../lib/lang";
 
 const OK = { mockData: { ok: true } };
 export const KIND_ICON = {

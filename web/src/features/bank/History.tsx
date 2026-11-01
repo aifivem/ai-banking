@@ -6,10 +6,10 @@ import {
   faArrowUp,
   faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
-import { VirtualList } from "../components/VirtualList";
-import { useLang } from "../lib/lang";
-import { cn } from "../lib/utils";
-import { historyLoading, store, useAppSelector } from "../store/bank";
+import { VirtualList } from "../../components/VirtualList";
+import { useLang } from "../../lib/lang";
+import { cn } from "../../lib/utils";
+import { historyLoading, store, useAppSelector } from "../../store/bank";
 import { groupDigits } from "@aicore-fivem/lib/shared";
 
 const OK = { mockData: { ok: true } };

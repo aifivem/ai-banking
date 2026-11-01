@@ -5,10 +5,10 @@ import {
   faUser,
   faWallet,
 } from "@fortawesome/free-solid-svg-icons";
-import type { BankSnapshot } from "../../../resource/common/bank";
-import { useLang } from "../lib/lang";
-import { cn } from "../lib/utils";
-import { selected, store, useAppSelector } from "../store/bank";
+import type { BankSnapshot } from "../../../../resource/common/bank";
+import { useLang } from "../../lib/lang";
+import { cn } from "../../lib/utils";
+import { selected, store, useAppSelector } from "../../store/bank";
 import { groupDigits } from "@aicore-fivem/lib/shared";
 
 const money = (n: number) => `$${groupDigits(n)}`;
