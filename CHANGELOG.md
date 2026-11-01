@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/aifivem/ai-banking/compare/v0.1.2...v0.1.3) (2026-11-01)
+
+
+### Code Refactoring
+
+* feature folders, side entries that only import, panel schema per tab ([50bb9f1](https://github.com/aifivem/ai-banking/commit/50bb9f197a000d3796adb43a4dcb1f4a13b86bd9))
+
 ## [0.1.2](https://github.com/aifivem/ai-banking/compare/v0.1.1...v0.1.2) (2026-10-31)
 
 
