@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/aifivem/ai-banking/compare/v0.1.3...v0.1.4) (2026-11-02)
+
+
+### Bug Fixes
+
+* **build:** keep the web build in dist/ so release zips have the NUI ([df30e5d](https://github.com/aifivem/ai-banking/commit/df30e5de19a0647c41336968736d54c80b005596))
+
+
+### Code Refactoring
+
+* import the shared packages from [@aifivem](https://github.com/aifivem) ([35f13c4](https://github.com/aifivem/ai-banking/commit/35f13c492b58591797744ec7c4d18d92b446250f))
+
 ## [0.1.3](https://github.com/aifivem/ai-banking/compare/v0.1.2...v0.1.3) (2026-11-01)
 
 
