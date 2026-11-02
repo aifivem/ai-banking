@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5](https://github.com/aifivem/ai-banking/compare/v0.1.4...v0.1.5) (2026-11-02)
+
+
+### Documentation
+
+* install from the release zip ([f4c56f4](https://github.com/aifivem/ai-banking/commit/f4c56f481be3fa97291d0f68624f80a904731850))
+
+
+### Miscellaneous Chores
+
+* build files are no longer in git, the release zip carries them ([1b9ab73](https://github.com/aifivem/ai-banking/commit/1b9ab73ce4c1e1846066ec46825d041cfa93294d))
+
 ## [0.1.4](https://github.com/aifivem/ai-banking/compare/v0.1.3...v0.1.4) (2026-11-02)
 
 
