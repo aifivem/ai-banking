@@ -10,6 +10,6 @@
   "atmDailyLimit": 20000,
   "transferFee": 0,
   "paycheckAtBranches": true,
-  "paycheckOffices": false,
+  "paycheckOffices": true,
   "reportSightings": true
 }

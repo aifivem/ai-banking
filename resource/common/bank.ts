@@ -108,7 +108,7 @@ export function readSettings(raw: unknown): Settings {
     atmDailyLimit: int(s.atmDailyLimit, 20_000, 0, 100_000_000),
     transferFee: num(s.transferFee, 0, 0, 50),
     paycheckAtBranches: bool(s.paycheckAtBranches, true),
-    paycheckOffices: bool(s.paycheckOffices, false),
+    paycheckOffices: bool(s.paycheckOffices, true),
     reportSightings: bool(s.reportSightings, true),
   };
 }
