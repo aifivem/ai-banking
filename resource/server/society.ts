@@ -1,5 +1,5 @@
-import { provideExport, registerExport } from "@aicore-fivem/lib/server";
-import { readFinite } from "@aicore-fivem/lib/shared";
+import { provideExport, registerExport } from "@aifivem/lib/server";
+import { readFinite } from "@aifivem/lib/shared";
 import { core } from "./core";
 import { pushBalance } from "./screen/sessions";
 

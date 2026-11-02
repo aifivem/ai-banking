@@ -2,8 +2,8 @@ import {
   BLIP_STYLE_FIELDS,
   PLACE_PED_SPEC,
   placePedFields,
-} from "@aicore-fivem/lib/shared";
-import type { PanelSchema } from "@aicore-fivem/shared";
+} from "@aifivem/lib/shared";
+import type { PanelSchema } from "@aifivem/shared";
 
 /** ai-banking's panel: bank branches, ATM models and limits. */
 export const bankingSchema: PanelSchema = {

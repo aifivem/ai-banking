@@ -1,11 +1,11 @@
-import { aiLog, money, notify, online } from "@aicore-fivem/lib/server";
+import { aiLog, money, notify, online } from "@aifivem/lib/server";
 import {
   type ActionResult,
   fail,
   readId,
   readText,
-} from "@aicore-fivem/lib/shared";
-import type { MoneyRef } from "@aicore-fivem/shared";
+} from "@aifivem/lib/shared";
+import type { MoneyRef } from "@aifivem/shared";
 import { Locale } from "common";
 import type { ActionKind } from "common/bank";
 import { core } from "../core";

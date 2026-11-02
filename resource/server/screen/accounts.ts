@@ -1,4 +1,4 @@
-import { definitions, online } from "@aicore-fivem/lib/server";
+import { definitions, online } from "@aifivem/lib/server";
 import { Locale } from "common";
 import type { AccountView } from "common/bank";
 import { core } from "../core";

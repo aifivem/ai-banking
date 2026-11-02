@@ -2,9 +2,9 @@ import {
   callAction,
   loadLocaleTexts,
   NuiScreen,
-} from "@aicore-fivem/lib/client";
-import { isRecord, readFinite } from "@aicore-fivem/lib/shared";
-import { NUI_LAYER } from "@aicore-fivem/shared";
+} from "@aifivem/lib/client";
+import { isRecord, readFinite } from "@aifivem/lib/shared";
+import { NUI_LAYER } from "@aifivem/shared";
 import {
   EVENTS,
   type BankSnapshot,

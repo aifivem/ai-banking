@@ -7,7 +7,7 @@ import {
   readPlacePed,
   record,
   str,
-} from "@aicore-fivem/lib/shared";
+} from "@aifivem/lib/shared";
 
 /** ai-banking's contracts and panel content. No natives. */
 
