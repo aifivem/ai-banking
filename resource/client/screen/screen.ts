@@ -1,8 +1,4 @@
-import {
-  callAction,
-  loadLocaleTexts,
-  NuiScreen,
-} from "@aifivem/lib/client";
+import { callAction, loadLocaleTexts, NuiScreen } from "@aifivem/lib/client";
 import { isRecord, readFinite } from "@aifivem/lib/shared";
 import { NUI_LAYER } from "@aifivem/shared";
 import {
@@ -23,8 +19,19 @@ export const page = new NuiScreen<NuiMessage>("bank", {
 
 /** The bank screen: opened at a branch point or an ATM (ai-target option); money changes arrive as deltas. */
 class Screen {
+  /** Paycheck balance the page shows; null while the open screen offers none (ATM, panel switch off). */
+  private paycheck: number | null = null;
+
   get open(): boolean {
     return page.isOpen;
+  }
+
+  /** ai-core's metadata delta: the page gets the paycheck balance when it changed. */
+  paycheckChanged(balance: number): void {
+    if (!page.isOpen || this.paycheck === null || balance === this.paycheck)
+      return;
+    this.paycheck = balance;
+    page.send({ action: "paycheck", data: balance });
   }
 
   /** `atm`: the ATM prop's position (the server keeps it and checks the player stays there). */
@@ -52,7 +59,9 @@ class Screen {
           ? [{ key: a.key, label: a.label, balance: a.balance }]
           : [],
       ),
+      paycheck: readFinite(raw.paycheck),
     };
+    this.paycheck = snapshot.paycheck;
     page.open({ action: "open", data: { texts, snapshot } });
   }
 }

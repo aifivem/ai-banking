@@ -22,6 +22,10 @@ export const EVENTS = {
   close: "ai-banking:close",
   /** Server -> every viewer of a shared account: (account, balance) it changed through ai-banking. */
   balance: "ai-banking:client:balance",
+  /** Callback: (office id) -> { ok, balance } the salary waiting in the paycheck office (the office menu's snapshot). */
+  paycheckBalance: "ai-banking:paycheckBalance",
+  /** Callback: (office id | null = the open branch screen, amount | null = everything) -> { ok } takes salary out. */
+  paycheck: "ai-banking:paycheck",
 } as const;
 
 export type Where = "bank" | "atm";
@@ -35,8 +39,15 @@ export interface Settings {
   atmDailyLimit: number;
   /** Percent taken from transfers to other players. */
   transferFee: number;
+  /** The branch screen offers the salary waiting in ai-core's paycheck office. */
+  paycheckAtBranches: boolean;
+  /** The paycheck office points (`offices` file) exist. */
+  paycheckOffices: boolean;
+  /** Bank and ATM visits are reported to ai-police (wanted sightings) while it runs. */
+  reportSightings: boolean;
 }
 
+/** A place of a records file: a bank branch or a paycheck office. */
 export interface Bank {
   /** NPC standing at the place (panel), null for none. */
   ped: PlacePed | null;
@@ -62,6 +73,11 @@ export interface BankSnapshot {
   where: Where;
   cash: number;
   accounts: AccountView[];
+  /**
+   * Salary waiting in the paycheck office; null when this screen offers none (ATM, panel switch off, ai-core's account
+   * mode with nothing waiting).
+   */
+  paycheck: number | null;
 }
 
 export interface Transaction {
@@ -91,11 +107,18 @@ export function readSettings(raw: unknown): Settings {
     atmLimit: int(s.atmLimit, 5000, 0, 10_000_000),
     atmDailyLimit: int(s.atmDailyLimit, 20_000, 0, 100_000_000),
     transferFee: num(s.transferFee, 0, 0, 50),
+    paycheckAtBranches: bool(s.paycheckAtBranches, true),
+    paycheckOffices: bool(s.paycheckOffices, false),
+    reportSightings: bool(s.reportSightings, true),
   };
 }
 
-/** One branch of the panel's records file (`panel.records` / `world.records`). */
-export function readBank(id: string, v: Record<string, unknown>): Bank {
+/** One place of a records file; `blipStyle` is the fallback blip look. */
+function readPlace(
+  id: string,
+  v: Record<string, unknown>,
+  blipStyle: Bank["blipStyle"],
+): Bank {
   const c = record(v.coords);
   const style = record(v.blipStyle);
   return {
@@ -107,9 +130,17 @@ export function readBank(id: string, v: Record<string, unknown>): Bank {
     z: num(c.z, 0),
     radius: num(v.radius, 3, 1, 20),
     blip: bool(v.blip, true),
-    blipStyle: readBlipStyle(style, { sprite: 108, color: 2, scale: 0.7 }),
+    blipStyle: readBlipStyle(style, blipStyle),
   };
 }
+
+/** One branch of the panel's records file (`panel.records` / `world.records`). */
+export const readBank = (id: string, v: Record<string, unknown>): Bank =>
+  readPlace(id, v, { sprite: 108, color: 2, scale: 0.7 });
+
+/** One paycheck office of the panel's `offices` file. */
+export const readOffice = (id: string, v: Record<string, unknown>): Bank =>
+  readPlace(id, v, { sprite: 500, color: 2, scale: 0.7 });
 
 /** Client -> NUI messages. */
 export type NuiMessage =
@@ -119,5 +150,6 @@ export type NuiMessage =
     }
   | { action: "cash"; data: number }
   | { action: "balance"; data: { account: string; balance: number } }
+  | { action: "paycheck"; data: number }
   | { action: "history"; data: HistoryPage }
   | { action: "close"; data: null };

@@ -20,6 +20,9 @@ import {
   type Where,
 } from "common/bank";
 import { core } from "../core";
+import { branchPaycheck } from "../paycheck";
+import { settings } from "../panel";
+import { reportSighting } from "../sightings";
 import { accounts, bossJobs } from "./accounts";
 import { runAction } from "./action";
 import { loadHistory } from "./history";
@@ -49,11 +52,16 @@ onClientCallback(
         a.key.startsWith("job:") ? [a.key.slice(4)] : [],
       ),
     });
+    reportSighting(source, where);
     return {
       ok: true,
       where,
       cash: core.GetMoney(source, "cash") ?? 0,
       accounts: list,
+      paycheck:
+        where === "bank" && settings.value.paycheckAtBranches
+          ? branchPaycheck(source)
+          : null,
     };
   },
 );

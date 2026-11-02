@@ -1,11 +1,7 @@
-import {
-  BLIP_STYLE_FIELDS,
-  PLACE_PED_SPEC,
-  placePedFields,
-} from "@aifivem/lib/shared";
 import type { PanelSchema } from "@aifivem/shared";
+import { PLACE_SECTIONS, placeTab } from "./placeSchema";
 
-/** ai-banking's panel: bank branches, ATM models and limits. */
+/** ai-banking's panel: bank branches, paycheck offices, ATM models and limits, paycheck and police switches. */
 export const bankingSchema: PanelSchema = {
   title: "ADMIN_TITLE",
   icon: "building-columns",
@@ -21,18 +17,20 @@ export const bankingSchema: PanelSchema = {
         blip: true,
         blipStyle: { sprite: 108, color: 2, scale: 0.7 },
       },
-      sections: {
-        ped: PLACE_PED_SPEC,
-        label: { type: "text", min: 1, max: 48 },
-        coords: { type: "vec3" },
-        radius: { type: "number", min: 1, max: 20 },
-        blip: { type: "bool" },
-        blipStyle: {
-          type: "object",
-          optional: true,
-          fields: BLIP_STYLE_FIELDS,
-        },
+      sections: PLACE_SECTIONS,
+    },
+    offices: {
+      kind: "records",
+      sync: "all",
+      labelPath: "label",
+      newRecord: {
+        label: "Paycheck office",
+        coords: { x: 0, y: 0, z: 0 },
+        radius: 2,
+        blip: true,
+        blipStyle: { sprite: 500, color: 2, scale: 0.7 },
       },
+      sections: PLACE_SECTIONS,
     },
     settings: {
       kind: "settings",
@@ -52,63 +50,33 @@ export const bankingSchema: PanelSchema = {
           integer: true,
         },
         transferFee: { type: "number", min: 0, max: 50 },
+        paycheckAtBranches: { type: "bool" },
+        paycheckOffices: { type: "bool" },
+        reportSightings: { type: "bool" },
       },
     },
   },
   tabs: [
-    {
-      id: "banks",
-      file: "banks",
-      icon: "building-columns",
-      label: "ADMIN_TAB_BANKS",
-      desc: "ADMIN_TAB_BANKS_DESC",
-      createLabel: "ADMIN_NEW_BANK",
-      deleteLabel: "ADMIN_DELETE_BANK",
-      cards: [
-        {
-          icon: "building-columns",
-          title: "ADMIN_C_BANK",
-          desc: "ADMIN_C_BANK_DESC",
-          fields: [
-            {
-              widget: "text",
-              path: "label",
-              suggest: { from: "coords" },
-              label: "ADMIN_F_LABEL",
-              placeholder: "ADMIN_P_LABEL",
-            },
-            {
-              widget: "point",
-              path: "coords",
-              label: "ADMIN_F_COORDS",
-              hint: "ADMIN_H_COORDS",
-              ground: true,
-            },
-            {
-              widget: "number",
-              path: "radius",
-              label: "ADMIN_F_RADIUS",
-              min: 1,
-              max: 20,
-              unit: "m",
-            },
-            { widget: "switch", path: "blip", label: "ADMIN_F_BLIP" },
-            {
-              widget: "blip",
-              path: "blipStyle",
-              label: "ADMIN_F_BLIP_STYLE",
-              showIf: { path: "blip", values: [true] },
-            },
-          ],
-        },
-        {
-          icon: "user",
-          title: "ADMIN_C_PED",
-          desc: "ADMIN_C_PED_DESC",
-          fields: placePedFields(),
-        },
-      ],
-    },
+    placeTab("banks", "building-columns", {
+      tab: "ADMIN_TAB_BANKS",
+      tabDesc: "ADMIN_TAB_BANKS_DESC",
+      create: "ADMIN_NEW_BANK",
+      remove: "ADMIN_DELETE_BANK",
+      card: "ADMIN_C_BANK",
+      cardDesc: "ADMIN_C_BANK_DESC",
+      placeholder: "ADMIN_P_LABEL",
+      coordsHint: "ADMIN_H_COORDS",
+    }),
+    placeTab("offices", "briefcase", {
+      tab: "ADMIN_TAB_OFFICES",
+      tabDesc: "ADMIN_TAB_OFFICES_DESC",
+      create: "ADMIN_NEW_OFFICE",
+      remove: "ADMIN_DELETE_OFFICE",
+      card: "ADMIN_C_OFFICE",
+      cardDesc: "ADMIN_C_OFFICE_DESC",
+      placeholder: "ADMIN_P_OFFICE_LABEL",
+      coordsHint: "ADMIN_H_OFFICE_COORDS",
+    }),
     {
       id: "settings",
       file: "settings",
@@ -157,6 +125,38 @@ export const bankingSchema: PanelSchema = {
               max: 50,
               step: 0.5,
               unit: "%",
+            },
+          ],
+        },
+        {
+          icon: "wallet",
+          title: "ADMIN_C_PAYCHECK",
+          desc: "ADMIN_C_PAYCHECK_DESC",
+          fields: [
+            {
+              widget: "switch",
+              path: "paycheckAtBranches",
+              label: "ADMIN_F_PAYCHECK_BRANCHES",
+              hint: "ADMIN_H_PAYCHECK_BRANCHES",
+            },
+            {
+              widget: "switch",
+              path: "paycheckOffices",
+              label: "ADMIN_F_PAYCHECK_OFFICES",
+              hint: "ADMIN_H_PAYCHECK_OFFICES",
+            },
+          ],
+        },
+        {
+          icon: "handcuffs",
+          title: "ADMIN_C_POLICE",
+          desc: "ADMIN_C_POLICE_DESC",
+          fields: [
+            {
+              widget: "switch",
+              path: "reportSightings",
+              label: "ADMIN_F_SIGHTINGS",
+              hint: "ADMIN_H_SIGHTINGS",
             },
           ],
         },

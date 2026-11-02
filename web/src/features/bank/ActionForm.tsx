@@ -6,6 +6,7 @@ import {
   faArrowRightArrowLeft,
   faArrowUp,
   faDollarSign,
+  faMoneyCheckDollar,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import type { ActionKind } from "../../../../resource/common/bank";
@@ -18,6 +19,7 @@ export const KIND_ICON = {
   deposit: faArrowDown,
   withdraw: faArrowUp,
   transfer: faArrowRightArrowLeft,
+  paycheck: faMoneyCheckDollar,
 } as const;
 
 /** Deposit / withdraw / transfer of the picked account: section title, pill inputs and the one green button. */

@@ -13,6 +13,8 @@ import type {
 interface BankState {
   snapshot: BankSnapshot | null;
   selected: string;
+  /** The Paycheck tab shows for this whole visit: the open snapshot offered a paycheck (office mode, or salary left). */
+  paycheckTab: boolean;
   history: Record<
     string,
     { rows: Transaction[]; more: boolean; loading: boolean }
@@ -22,10 +24,11 @@ interface BankState {
 const initialState: BankState = {
   snapshot: null,
   selected: "personal",
+  paycheckTab: false,
   history: {},
 };
 
-/** The bank screen: the open snapshot, then cash / balance deltas and history pages. */
+/** The bank screen: the open snapshot, then cash / balance / paycheck deltas and history pages. */
 const bank = createSlice({
   name: "bank",
   initialState,
@@ -33,6 +36,7 @@ const bank = createSlice({
     opened(state, a: PayloadAction<BankSnapshot>) {
       state.snapshot = a.payload;
       state.selected = a.payload.accounts[0]?.key ?? "personal";
+      state.paycheckTab = a.payload.paycheck !== null;
       state.history = {};
     },
     closed(state) {
@@ -43,6 +47,9 @@ const bank = createSlice({
     },
     cashSet(state, a: PayloadAction<number>) {
       if (state.snapshot) state.snapshot.cash = a.payload;
+    },
+    paycheckSet(state, a: PayloadAction<number>) {
+      if (state.snapshot) state.snapshot.paycheck = a.payload;
     },
     balanceSet(state, a: PayloadAction<{ account: string; balance: number }>) {
       const account = state.snapshot?.accounts.find(
@@ -79,6 +86,7 @@ export const {
   closed,
   selected,
   cashSet,
+  paycheckSet,
   balanceSet,
   historyLoading,
   historyPage,
