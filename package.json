@@ -1,6 +1,6 @@
 {
   "name": "ai-banking",
-  "version": "0.1.5",
+  "version": "0.2.0",
   "private": true,
   "description": "Banking: accounts, deposits, withdrawals, transfers, history, ATMs",
   "license": "GPL-3.0-only",

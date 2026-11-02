@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.0](https://github.com/aifivem/ai-banking/compare/v0.1.5...v0.2.0) (2026-11-02)
+
+
+### New Features
+
+* **banking:** add paycheck withdrawal at branches and paycheck offices ([fdc561c](https://github.com/aifivem/ai-banking/commit/fdc561c5d7ffa2926c51644ae53d640d43d32526))
+* **banking:** show paycheck offices by default ([0504a40](https://github.com/aifivem/ai-banking/commit/0504a40da63efdf8f604251ac467879991beed67))
+
+
+### Code Refactoring
+
+* **banking:** remove the paycheck tab and offices, now part of ai-core ([f26ba6e](https://github.com/aifivem/ai-banking/commit/f26ba6e69ab1774b88bff57d4c713fb6f8330a83))
+
 ## [0.1.5](https://github.com/aifivem/ai-banking/compare/v0.1.4...v0.1.5) (2026-11-02)
 
 
