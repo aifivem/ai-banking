@@ -1,7 +1,7 @@
 import type { PanelSchema } from "@aifivem/shared";
 import { PLACE_SECTIONS, placeTab } from "./placeSchema";
 
-/** ai-banking's panel: bank branches, paycheck offices, ATM models and limits, paycheck and police switches. */
+/** ai-banking's panel: bank branches, ATM models and limits, the transfer fee and the police switch. */
 export const bankingSchema: PanelSchema = {
   title: "ADMIN_TITLE",
   icon: "building-columns",
@@ -16,19 +16,6 @@ export const bankingSchema: PanelSchema = {
         radius: 3,
         blip: true,
         blipStyle: { sprite: 108, color: 2, scale: 0.7 },
-      },
-      sections: PLACE_SECTIONS,
-    },
-    offices: {
-      kind: "records",
-      sync: "all",
-      labelPath: "label",
-      newRecord: {
-        label: "Paycheck office",
-        coords: { x: 0, y: 0, z: 0 },
-        radius: 2,
-        blip: true,
-        blipStyle: { sprite: 500, color: 2, scale: 0.7 },
       },
       sections: PLACE_SECTIONS,
     },
@@ -50,8 +37,6 @@ export const bankingSchema: PanelSchema = {
           integer: true,
         },
         transferFee: { type: "number", min: 0, max: 50 },
-        paycheckAtBranches: { type: "bool" },
-        paycheckOffices: { type: "bool" },
         reportSightings: { type: "bool" },
       },
     },
@@ -66,16 +51,6 @@ export const bankingSchema: PanelSchema = {
       cardDesc: "ADMIN_C_BANK_DESC",
       placeholder: "ADMIN_P_LABEL",
       coordsHint: "ADMIN_H_COORDS",
-    }),
-    placeTab("offices", "briefcase", {
-      tab: "ADMIN_TAB_OFFICES",
-      tabDesc: "ADMIN_TAB_OFFICES_DESC",
-      create: "ADMIN_NEW_OFFICE",
-      remove: "ADMIN_DELETE_OFFICE",
-      card: "ADMIN_C_OFFICE",
-      cardDesc: "ADMIN_C_OFFICE_DESC",
-      placeholder: "ADMIN_P_OFFICE_LABEL",
-      coordsHint: "ADMIN_H_OFFICE_COORDS",
     }),
     {
       id: "settings",
@@ -125,25 +100,6 @@ export const bankingSchema: PanelSchema = {
               max: 50,
               step: 0.5,
               unit: "%",
-            },
-          ],
-        },
-        {
-          icon: "wallet",
-          title: "ADMIN_C_PAYCHECK",
-          desc: "ADMIN_C_PAYCHECK_DESC",
-          fields: [
-            {
-              widget: "switch",
-              path: "paycheckAtBranches",
-              label: "ADMIN_F_PAYCHECK_BRANCHES",
-              hint: "ADMIN_H_PAYCHECK_BRANCHES",
-            },
-            {
-              widget: "switch",
-              path: "paycheckOffices",
-              label: "ADMIN_F_PAYCHECK_OFFICES",
-              hint: "ADMIN_H_PAYCHECK_OFFICES",
             },
           ],
         },

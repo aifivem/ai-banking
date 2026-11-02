@@ -5,7 +5,7 @@ import {
 } from "@aifivem/lib/shared";
 import type { DataSpec, TabSpec } from "@aifivem/shared";
 
-/** Data of a place (a branch or a paycheck office): name, counter point, reach, blip and NPC. */
+/** Data of a place (a bank branch): name, counter point, reach, blip and NPC. */
 export const PLACE_SECTIONS: Record<string, DataSpec> = {
   ped: PLACE_PED_SPEC,
   label: { type: "text", min: 1, max: 48 },

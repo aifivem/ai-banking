@@ -35,12 +35,17 @@
       "type": "number",
       "minimum": 0,
       "maximum": 50
+    },
+    "reportSightings": {
+      "description": "Report wanted sightings: Each opened bank or ATM screen is reported to ai-police, which can alert officers when the player is wanted. Does nothing while ai-police is not running.",
+      "type": "boolean"
     }
   },
   "required": [
     "atmModels",
     "atmLimit",
     "atmDailyLimit",
-    "transferFee"
+    "transferFee",
+    "reportSightings"
   ]
 }

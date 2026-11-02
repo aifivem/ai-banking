@@ -4,7 +4,7 @@ import {
   onPlayerData,
   onServerEvent,
 } from "@aifivem/lib/client";
-import { isRecord, readFinite, readText } from "@aifivem/lib/shared";
+import { isRecord, readText } from "@aifivem/lib/shared";
 import { Locale } from "common";
 import { EVENTS } from "common/bank";
 import { loadHistory } from "./history";
@@ -18,10 +18,6 @@ onPlayerData("money", (money) => {
       action: "balance",
       data: { account: "personal", balance: money.bank },
     });
-});
-onPlayerData("metadata", (meta) => {
-  if (screen.open && isRecord(meta))
-    screen.paycheckChanged(readFinite(meta.paycheck) ?? 0);
 });
 onServerEvent(
   EVENTS.balance,
@@ -63,19 +59,6 @@ page.on(
       { fallback: "BANK_ERR_MONEY" },
     );
     if (result) notify(Locale("BANK_DONE"), "success", 2000);
-    return { ok: result !== null };
-  },
-);
-page.on(
-  "paycheck",
-  (d) =>
-    isRecord(d) && (d.amount === null || typeof d.amount === "number")
-      ? { amount: d.amount }
-      : null,
-  async ({ amount }) => {
-    const result = await callAction(EVENTS.paycheck, [null, amount], {
-      fallback: "PAYCHECK_ERR_FAILED",
-    });
     return { ok: result !== null };
   },
 );

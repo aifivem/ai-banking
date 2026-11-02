@@ -41,8 +41,7 @@
   },
   "fxFiles": [
     "data/settings.json",
-    "data/banks.json",
-    "data/offices.json"
+    "data/banks.json"
   ],
   "fxProvide": [
     "qb-banking",

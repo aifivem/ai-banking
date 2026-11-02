@@ -14,17 +14,12 @@ import {
   closed,
   historyPage,
   opened,
-  paycheckSet,
   store,
   useAppSelector,
 } from "./store/bank";
 import { Accounts } from "./features/bank/Accounts";
 import { ActionForm, KIND_ICON } from "./features/bank/ActionForm";
 import { History } from "./features/bank/History";
-import { PaycheckForm } from "./features/bank/PaycheckForm";
-
-/** A header tab: an action on the picked account, or the paycheck office at a branch. */
-type Tab = ActionKind | "paycheck";
 
 type Data<A extends NuiMessage["action"]> = Extract<
   NuiMessage,
@@ -46,20 +41,13 @@ const close = () => void fetchNui("close", undefined, OK);
 /** The bank (tgiann-bank look): header with icon tabs, the account card and list left, the action and the history right. */
 export function App() {
   const t = useLang();
-  const {
-    snapshot,
-    selected: account,
-    paycheckTab,
-  } = useAppSelector((s) => s.bank);
-  const [picked, setKind] = useState<Tab>("withdraw");
+  const { snapshot, selected: account } = useAppSelector((s) => s.bank);
+  const [picked, setKind] = useState<ActionKind>("withdraw");
 
   useNuiEvent("open", onOpen, OPEN_MOCK);
   useNuiEvent("close", () => store.dispatch(closed()));
   useNuiEvent<Data<"cash">>("cash", (d) => store.dispatch(cashSet(d)));
   useNuiEvent<Data<"balance">>("balance", (d) => store.dispatch(balanceSet(d)));
-  useNuiEvent<Data<"paycheck">>("paycheck", (d) =>
-    store.dispatch(paycheckSet(d)),
-  );
   useNuiEvent<Data<"history">>(
     "history",
     (d) => store.dispatch(historyPage(d)),
@@ -75,10 +63,9 @@ export function App() {
 
   if (!snapshot) return null;
   const atm = snapshot.where === "atm";
-  const kinds: Tab[] = atm
+  const kinds: ActionKind[] = atm
     ? ["withdraw", "transfer"]
     : ["deposit", "withdraw", "transfer"];
-  if (paycheckTab) kinds.push("paycheck");
   // A tab picked on an earlier visit that this screen lacks (deposit at an ATM) falls back to withdraw.
   const kind = kinds.includes(picked) ? picked : "withdraw";
   const active = kinds.indexOf(kind);
@@ -130,11 +117,7 @@ export function App() {
         <div className="grid min-h-0 flex-1 grid-cols-[33vh_minmax(0,1fr)] gap-[1.2vh] p-[1.2vh]">
           <Accounts snapshot={snapshot} account={account} atm={atm} />
           <div className="flex min-h-0 min-w-0 flex-col gap-[1.2vh]">
-            {kind === "paycheck" ? (
-              <PaycheckForm balance={snapshot.paycheck ?? 0} />
-            ) : (
-              <ActionForm account={account} kind={kind} />
-            )}
+            <ActionForm account={account} kind={kind} />
             <History account={account} />
           </div>
         </div>

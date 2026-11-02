@@ -14,7 +14,6 @@ export const MOCK_OPEN = {
       { key: "personal", label: "Personal account", balance: 48200 },
       { key: "job:police", label: "LSPD", balance: 1250000 },
     ],
-    paycheck: atm ? null : 3200,
   },
 };
 
